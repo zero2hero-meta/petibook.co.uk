@@ -1,7 +1,11 @@
 import { createServerClient as createSupabaseServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-export const createServerClient = async () => {
+type ServerClientOptions = {
+  allowCookieWrite?: boolean
+}
+
+export const createServerClient = async ({ allowCookieWrite = false }: ServerClientOptions = {}) => {
   const cookieStore = await cookies()
 
   return createSupabaseServerClient(
@@ -10,9 +14,11 @@ export const createServerClient = async () => {
     {
       cookies: {
         getAll: () => cookieStore.getAll(),
-        setAll: (cookiesToSet) => {
-          cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
-        },
+        ...(allowCookieWrite && {
+          setAll: (cookiesToSet) => {
+            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
+          },
+        }),
       },
     }
   )

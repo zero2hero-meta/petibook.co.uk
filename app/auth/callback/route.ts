@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const next = requestUrl.searchParams.get('redirect_to') ?? '/'
 
   if (code) {
-    const supabase = await createServerClient()
+    const supabase = await createServerClient({ allowCookieWrite: true })
     await supabase.auth.exchangeCodeForSession(code)
   }
 

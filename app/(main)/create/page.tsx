@@ -38,12 +38,16 @@ export default function CreatePage() {
       formData.append('email', email)
       formData.append('is_guest', user ? 'false' : 'true')
 
+    console.log('[before n8n callback] start upload - 0')
+
       const response = await fetch('/api/orders/create', {
         method: 'POST',
         body: formData,
       })
+    console.log('[before n8n callback] start upload - 1')
 
       const data = await response.json()
+    console.log('[before n8n callback] start upload - 2')
 
       if (!response.ok) {
         throw new Error(data.error || 'Failed to create order')

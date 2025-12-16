@@ -1,10 +1,16 @@
 import { createServerClient } from '@/lib/supabase/server'
+import { createServiceRoleClient } from '@/lib/supabase/service'
+import { uploadRemoteImage } from '@/lib/supabase/storage'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createServerClient()
+    console.log('[n8n callback] start upload - 0')
+
+    // Use service role for storage + DB writes to bypass RLS for webhooks
+    const supabase = createServiceRoleClient()
     const body = await request.json()
+    console.log('[n8n callback] start upload - 1')
 
     const {
       order_id,
@@ -21,6 +27,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+    console.log('[n8n callback] start upload - 2')
 
     const imageData = images[0]
 
@@ -29,6 +36,7 @@ export async function POST(request: NextRequest) {
       .select('is_guest')
       .eq('id', order_id)
       .single()
+    console.log('[n8n callback] start upload - 3')
 
     if (!order) {
       return NextResponse.json(
@@ -37,22 +45,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const imageResponse = await fetch(imageData.url)
-    const imageBuffer = await imageResponse.arrayBuffer()
-
+    console.log('[n8n callback] start upload', { order_id, fileUrl: imageData.url })
     const fileName = `generated/${order_id}/${Date.now()}.jpg`
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('images')
-      .upload(fileName, imageBuffer, {
-        contentType: 'image/jpeg',
-        upsert: false
-      })
+    const publicUrl = await uploadRemoteImage(supabase, imageData.url, fileName, imageData.content_type || 'image/jpeg')
 
-    if (uploadError) throw uploadError
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('images')
-      .getPublicUrl(fileName)
+    console.log('[n8n callback] upload complete', { order_id, fileName, publicUrl })
 
     await supabase
       .from('petiboo_generations')
@@ -94,7 +91,12 @@ export async function POST(request: NextRequest) {
       await supabase.storage.from('images').remove([path])
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({
+      success: true,
+      order_id,
+      publicUrl,
+      message: 'Generated image stored and order updated',
+    })
   } catch (error: any) {
     console.error('N8N callback error:', error)
     return NextResponse.json(
