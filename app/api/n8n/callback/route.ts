@@ -29,7 +29,6 @@ export async function POST(request: NextRequest) {
     }
     console.log('[n8n callback] start upload - 2')
 
-    const imageData = images[0]
 
     const { data: order } = await supabase
       .from('petiboo_orders')
@@ -45,28 +44,33 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log('[n8n callback] start upload', { order_id, fileUrl: imageData.url })
-    const fileName = `generated/${order_id}/${Date.now()}.jpg`
-    const publicUrl = await uploadRemoteImage(supabase, imageData.url, fileName, imageData.content_type || 'image/jpeg')
+    let imageData;
+    const publicUrls = [];
+    for (let i = 0; i < images.length; i++) { // generates as much as generated images 
+      imageData = images[i];
+      console.log('[n8n callback] start upload', { order_id, fileUrl: imageData.url })
+      const fileName = `generated/${order_id}/${Date.now()}.jpg`
+      const publicUrl = await uploadRemoteImage(supabase, imageData.url, fileName, imageData.content_type || 'image/jpeg')
+      publicUrls.push(publicUrl)
+      console.log('[n8n callback] upload complete', { order_id, fileName, publicUrl })
 
-    console.log('[n8n callback] upload complete', { order_id, fileName, publicUrl })
-
-    await supabase
-      .from('petiboo_generations')
-      .update({
-        fal_image_url: imageData.url,
-        permanent_image_url: publicUrl,
-        status: 'completed',
-        width: imageData.width,
-        height: imageData.height,
-        content_type: imageData.content_type,
-        seed: seed,
-        prompt: prompt,
-        has_nsfw_concepts: has_nsfw_concepts?.[0] || false,
-        completed_at: new Date().toISOString()
-      })
-      .eq('order_id', order_id)
-
+      await supabase
+        .from('petiboo_generations')
+        .update({
+          fal_image_url: imageData.url,
+          permanent_image_url: publicUrl,
+          status: 'completed',
+          width: imageData.width,
+          height: imageData.height,
+          content_type: imageData.content_type,
+          seed: seed,
+          prompt: prompt,
+          has_nsfw_concepts: has_nsfw_concepts?.[0] || false,
+          completed_at: new Date().toISOString()
+        })
+        .eq('order_id', order_id)
+        .eq('order', i)
+    }
     await supabase
       .from('petiboo_orders')
       .update({
@@ -94,7 +98,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       order_id,
-      publicUrl,
+      publicUrls,
       message: 'Generated image stored and order updated',
     })
   } catch (error: any) {

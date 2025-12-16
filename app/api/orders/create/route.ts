@@ -86,14 +86,30 @@ export async function POST(request: NextRequest) {
         console.error('[n8n webhook] failed', n8nResponse.status, errorText)
       } else {
         const n8nData = await n8nResponse.json()
+        console.log(`[n8n webhook] response - n8nData: ${JSON.stringify(n8nData, null, 2)}`);
         console.log('[n8n webhook] queued', { order_id: order.id, request_id: n8nData.request_id, callbackUrl })
+        const images: any[] = n8nData.images || [];
+        for (let i = 0; i < images.length; i++) {
+          console.log(`[n8n webhook] image data: ${JSON.stringify(i, null, 2)}`);
 
-        await supabase.from('petiboo_generations').insert({
-          order_id: order.id,
-          n8n_request_id: n8nData.request_id || `manual_${Date.now()}`,
-          status: 'queued',
-          has_watermark: isGuest
+          await supabase.from('petiboo_generations').insert({
+            order_id: order.id,
+            n8n_request_id: n8nData.request_id,// || `manual_${Date.now()}`,
+            status: 'queued',
+            has_watermark: isGuest
+          });
+        }
+        // const callbackUrl = `${request.nextUrl.origin}/api/n8n/callback`
+        await fetch(callbackUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            order_id: order.id,
+            ...n8nData
+          })
         })
+
+
 
         await supabase
           .from('petiboo_orders')
