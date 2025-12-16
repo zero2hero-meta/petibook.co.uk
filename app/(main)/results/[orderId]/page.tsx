@@ -4,7 +4,7 @@ import OrderStatus from '@/components/OrderStatus'
 
 export default async function ResultsPage({ params }: { params: Promise<{ orderId: string }> }) {
   const { orderId } = await params
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
 
   const { data: order } = await supabase
     .from('petiboo_orders')

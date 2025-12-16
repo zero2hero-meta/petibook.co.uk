@@ -1,10 +1,9 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = await createServerClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     const formData = await request.formData()
@@ -59,7 +58,7 @@ export async function POST(request: NextRequest) {
 
     if (orderError) throw orderError
 
-    const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL
+    const n8nWebhookUrl = process.env.NEXT_N8N_WEBHOOK_URL
     if (n8nWebhookUrl) {
       const n8nResponse = await fetch(n8nWebhookUrl, {
         method: 'POST',

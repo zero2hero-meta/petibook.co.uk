@@ -1,5 +1,4 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
@@ -8,7 +7,7 @@ export async function GET(
 ) {
   try {
     const { orderId } = await params
-    const supabase = createRouteHandlerClient({ cookies })
+    const supabase = await createServerClient()
 
     const { data: order, error } = await supabase
       .from('petiboo_orders')

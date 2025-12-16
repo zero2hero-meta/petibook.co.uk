@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { ImageIcon } from 'lucide-react'
 
 export default async function GalleryPage() {
-  const supabase = createServerClient()
+  const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {

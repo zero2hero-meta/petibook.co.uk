@@ -26,12 +26,14 @@ Transform your pet into a hilarious South Park-style caricature with your facial
 ## Database Schema
 
 ### Tables Created:
+
 1. `petiboo_users` - User accounts and profiles
 2. `petiboo_orders` - Order tracking and metadata
 3. `petiboo_generations` - AI generation results
 4. `petiboo_payments` - Payment transactions
 
 ### Storage Buckets:
+
 - `images` - Stores optimized, original, and generated images
 
 ## Getting Started
@@ -47,11 +49,13 @@ Transform your pet into a hilarious South Park-style caricature with your facial
 ### Installation
 
 1. Install dependencies:
+
 ```bash
 npm install
 ```
 
 2. Set up environment variables in `.env.local`:
+
 ```
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
@@ -61,6 +65,7 @@ STRIPE_SECRET_KEY=your_stripe_secret
 ```
 
 3. Run the development server:
+
 ```bash
 npm run dev
 ```
@@ -96,6 +101,7 @@ npm run start
 ## User Flow
 
 ### Guest User (Free):
+
 1. Upload owner and pet photos
 2. Enter email address
 3. Wait for AI generation (30-60 min)
@@ -103,6 +109,7 @@ npm run start
 5. Prompted to sign in for more
 
 ### Registered User:
+
 1. Sign in with Google
 2. Upload photos
 3. Choose package (paid)
@@ -112,12 +119,14 @@ npm run start
 ## N8N Integration
 
 The application integrates with an N8N workflow that:
+
 1. Receives image URLs from the order creation endpoint
 2. Calls FAL.AI API for image generation
 3. Polls for completion
 4. Sends results back to `/api/n8n/callback`
 
 ### Required N8N Workflow Steps:
+
 1. Webhook trigger
 2. Wait 1 second
 3. Call FAL.AI API
@@ -141,16 +150,21 @@ The application integrates with an N8N workflow that:
 ## API Endpoints
 
 ### POST /api/orders/create
+
 Create a new caricature order
+
 - Accepts: FormData with owner_image, pet_image, email
 - Returns: order_id
 
 ### POST /api/n8n/callback
+
 Receive AI generation results from N8N
+
 - Accepts: JSON with order_id, images, metadata
 - Updates order and generation status
 
 ### GET /api/auth/callback
+
 OAuth callback handler for Google Sign-In
 
 ## TODO: Additional Features
@@ -167,18 +181,53 @@ OAuth callback handler for Google Sign-In
 ## Environment Setup
 
 ### Supabase Setup:
+
 1. Create a new Supabase project
 2. Enable Google OAuth in Authentication settings
 3. Run the provided migrations (already applied)
 4. Create storage bucket named "images"
 
+### Supabase migration
+
+to create tables on the supabase:
+
+```bash
+$ supabase secrets set --project-ref   your-project-ref> \
+  SUPABASE_URL=https://... \
+  SUPABASE_SERVICE_ROLE_KEY=...
+```
+
+Creating all tables in Supabase
+
+```bash
+#login
+❯ npx supabase login
+
+#supabase project ref
+❯ npx supabase link --project-ref erliripjhdznygvoxnpw
+
+# if needed
+❯ npx supabase migration repair --status reverted 20251208024100
+
+# creates tables
+❯ npx supabase db push
+```
+
+From the repo root, deploy the function
+
+```bash
+supabase functions deploy generation-callback --project-ref <your-project-ref>
+```
+
 ### Google OAuth Setup:
+
 1. Create project in Google Cloud Console
 2. Enable Google+ API
 3. Create OAuth 2.0 credentials
 4. Add to Supabase Auth providers
 
 ### N8N Setup:
+
 1. Create N8N workflow from provided JSON
 2. Configure FAL.AI API credentials
 3. Update callback URL to your domain
