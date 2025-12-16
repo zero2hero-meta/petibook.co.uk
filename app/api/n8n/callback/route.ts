@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
       const path = orderData.pet_image_original.split('/images/')[1]
       await supabase.storage.from('images').remove([path])
     }
-
+    console.log('[n8n callback] all uploads complete', { order_id, publicUrls: JSON.stringify(publicUrls) })
     return NextResponse.json({
       success: true,
       order_id,
