@@ -340,91 +340,62 @@ export default function CreatePage() {
           <div className="space-y-12">
             {currentStep === 1 && (
               <section className="rounded-3xl border border-purple-100 bg-white/80 p-6 md:p-8 shadow-sm">
-                <div className="flex flex-col lg:flex-row gap-8">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center">
-                        <UploadCloud className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <p className="text-xs uppercase tracking-[0.2em] text-purple-500 font-semibold">Step 1</p>
-                        <h2 className="text-2xl font-bold text-gray-800">Upload Your Photos</h2>
-                      </div>
+                <div className="flex flex-col gap-8">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center">
+                      <UploadCloud className="w-6 h-6" />
                     </div>
-                    <p className="text-gray-600 mb-6">
-                      Upload a clear photo of yourself and your beloved pet. Our AI assistant checks image quality automatically.
-                    </p>
-
-                    <div className="grid md:grid-cols-2 gap-8 mb-6">
-                      <ImageUpload
-                        title="Your Photo"
-                        onImageSelect={(file, preview) => setOwnerImage({ file, preview })}
-                        preview={ownerImage?.preview}
-                      />
-                      <ImageUpload
-                        title="Your Pet's Photo"
-                        onImageSelect={(file, preview) => setPetImage({ file, preview })}
-                        preview={petImage?.preview}
-                      />
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.2em] text-purple-500 font-semibold">Step 1</p>
+                      <h2 className="text-2xl font-bold text-gray-800">Upload Your Photos</h2>
                     </div>
-
-                    {!userEmail && (
-                      <div className="mb-6">
-                        <label htmlFor="email" className="block text-lg font-semibold mb-3 text-gray-700">
-                          Your Email
-                        </label>
-                        <input
-                          type="email"
-                          id="email"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          placeholder="your@email.com"
-                          className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition"
-                          required
-                        />
-                        <p className="text-sm text-gray-500 mt-2">
-                          We'll send your caricatures to this email
-                        </p>
-                      </div>
-                    )}
                   </div>
-                  <div className="lg:w-80">
-                    <div className="rounded-3xl border border-purple-100 bg-gradient-to-br from-purple-50 via-white to-pink-50 p-4 shadow-sm">
-                      <div className="flex items-center gap-2 text-xs text-gray-400">
-                        <div className="flex gap-1">
-                          <span className="w-2 h-2 rounded-full bg-red-300" />
-                          <span className="w-2 h-2 rounded-full bg-yellow-300" />
-                          <span className="w-2 h-2 rounded-full bg-green-300" />
-                        </div>
-                        <span className="ml-auto">upload-preview.png</span>
-                      </div>
-                      <div className="mt-4 rounded-2xl border border-dashed border-purple-200 bg-white/70 p-4">
-                        <div className="h-28 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
-                          <UploadCloud className="w-10 h-10 text-purple-400" />
-                        </div>
-                        <div className="mt-4 h-2 rounded-full bg-purple-100" />
-                        <div className="mt-2 h-2 w-2/3 rounded-full bg-purple-50" />
-                        <div className="mt-3 flex gap-2">
-                          <div className="h-10 w-10 rounded-xl bg-purple-50" />
-                          <div className="h-10 w-10 rounded-xl bg-pink-50" />
-                          <div className="h-10 w-10 rounded-xl bg-yellow-50" />
-                        </div>
-                      </div>
-                      <p className="mt-4 text-xs text-gray-500">
-                        Screenshot of the upload interface
+                  <p className="text-gray-600">
+                    Upload a clear photo of yourself and your beloved pet. Our AI assistant checks image quality automatically.
+                  </p>
+
+                  <div className="grid md:grid-cols-2 gap-8">
+                    <ImageUpload
+                      title="Your Photo"
+                      onImageSelect={(file, preview) => setOwnerImage({ file, preview })}
+                      preview={ownerImage?.preview}
+                    />
+                    <ImageUpload
+                      title="Your Pet's Photo"
+                      onImageSelect={(file, preview) => setPetImage({ file, preview })}
+                      preview={petImage?.preview}
+                    />
+                  </div>
+
+                  {!userEmail && (
+                    <div className="mb-2">
+                      <label htmlFor="email" className="block text-lg font-semibold mb-3 text-gray-700">
+                        Your Email
+                      </label>
+                      <input
+                        type="email"
+                        id="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="your@email.com"
+                        className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition"
+                        required
+                      />
+                      <p className="text-sm text-gray-500 mt-2">
+                        We'll send your caricatures to this email
                       </p>
                     </div>
-                  </div>
-                </div>
+                  )}
 
-                <div className="mt-8 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={handleStepOneNext}
-                    className="btn-primary"
-                  >
-                    Continue to styles
-                  </button>
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={handleStepOneNext}
+                      className="btn-primary"
+                    >
+                      Continue to styles
+                    </button>
+                  </div>
                 </div>
               </section>
             )}
