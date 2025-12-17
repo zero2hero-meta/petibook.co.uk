@@ -18,6 +18,7 @@ export default async function GalleryPage() {
       petiboo_generations (*)
     `)
     .eq('user_id', user.id)
+    .order('order', { referencedTable: 'petiboo_generations', ascending: true })
     .order('created_at', { ascending: false })
 
   return (
@@ -48,7 +49,7 @@ export default async function GalleryPage() {
               return (
                 <Link
                   key={order.id}
-                  href={`/results/${order.id}`}
+                  href={`/results/${order.id}?order=${generation?.order ?? 0}`}
                   className="card hover:-translate-y-1 transition-transform cursor-pointer"
                 >
                   <div className="aspect-square bg-gray-200 rounded-xl mb-4 overflow-hidden">

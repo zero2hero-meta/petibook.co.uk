@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import ImageUpload from '@/components/ImageUpload'
 import { createClient } from '@/lib/supabase/client'
 import { Loader2 } from 'lucide-react'
@@ -10,10 +10,20 @@ export default function CreatePage() {
   const [ownerImage, setOwnerImage] = useState<{ file: File; preview: string } | null>(null)
   const [petImage, setPetImage] = useState<{ file: File; preview: string } | null>(null)
   const [email, setEmail] = useState('')
+  const [userEmail, setUserEmail] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const router = useRouter()
   const supabase = createClient()
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user?.email) {
+        setUserEmail(data.user.email)
+        setEmail(data.user.email)
+      }
+    })
+  }, [supabase])
 
   const handleSubmit = async () => {
     if (!ownerImage || !petImage) {
@@ -21,7 +31,7 @@ export default function CreatePage() {
       return
     }
 
-    if (!email) {
+    if (!userEmail && !email) {
       setError('Please enter your email address')
       return
     }
@@ -35,7 +45,7 @@ export default function CreatePage() {
       const formData = new FormData()
       formData.append('owner_image', ownerImage.file)
       formData.append('pet_image', petImage.file)
-      formData.append('email', email)
+      formData.append('email', email || userEmail || '')
       formData.append('is_guest', user ? 'false' : 'true')
 
     console.log('[before n8n callback] start upload - 0')
@@ -91,23 +101,25 @@ export default function CreatePage() {
             />
           </div>
 
-          <div className="mb-6">
-            <label htmlFor="email" className="block text-lg font-semibold mb-3 text-gray-700">
-              Your Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
-              className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition"
-              required
-            />
-            <p className="text-sm text-gray-500 mt-2">
-              We'll send your caricatures to this email
-            </p>
-          </div>
+          {!userEmail && (
+            <div className="mb-6">
+              <label htmlFor="email" className="block text-lg font-semibold mb-3 text-gray-700">
+                Your Email
+              </label>
+              <input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                className="w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none transition"
+                required
+              />
+              <p className="text-sm text-gray-500 mt-2">
+                We'll send your caricatures to this email
+              </p>
+            </div>
+          )}
 
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600">
@@ -117,7 +129,7 @@ export default function CreatePage() {
 
           <button
             onClick={handleSubmit}
-            disabled={!ownerImage || !petImage || !email || uploading}
+          disabled={!ownerImage || !petImage || (!userEmail && !email) || uploading}
             className="w-full btn-primary text-lg py-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {uploading ? (

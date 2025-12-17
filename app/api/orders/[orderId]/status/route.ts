@@ -7,6 +7,8 @@ export async function GET(
 ) {
   try {
     const { orderId } = await params
+    const searchParams = new URL(request.url).searchParams
+    const orderIndex = Number(searchParams.get('order') ?? '0')
     const supabase = await createServerClient()
 
     const { data: order, error } = await supabase
@@ -21,10 +23,12 @@ export async function GET(
           id,
           permanent_image_url,
           status,
-          has_watermark
+          has_watermark,
+          order
         )
       `)
       .eq('id', orderId)
+      .order('order', { referencedTable: 'petiboo_generations', ascending: true })
       .single()
 
     if (error || !order) {
@@ -34,13 +38,18 @@ export async function GET(
       )
     }
 
+    const generation =
+      order.petiboo_generations?.find((g: any) => g.order === orderIndex) ??
+      order.petiboo_generations?.[0] ??
+      null
+
     return NextResponse.json({
       order_id: order.id,
       status: order.status,
       created_at: order.created_at,
       processing_started_at: order.processing_started_at,
       completed_at: order.completed_at,
-      generation: order.petiboo_generations?.[0] || null
+      generation
     })
   } catch (error: any) {
     console.error('Status check error:', error)

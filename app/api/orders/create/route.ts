@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
         );
 
 
-        await supabase
+        await serviceSupabase
           .from('petiboo_orders')
           .update({ status: 'processing', processing_started_at: new Date().toISOString() })
           .eq('id', order.id)
@@ -241,7 +241,8 @@ export async function uploadFalAiGeneratedImages(n8nResponse: any, supabase: any
         seed: seed,
         prompt: prompt,
         has_nsfw_concepts: has_nsfw_concepts?.[0] || false,
-        completed_at: new Date().toISOString()
+        completed_at: new Date().toISOString(),
+        order: j,
       })
     }
 
