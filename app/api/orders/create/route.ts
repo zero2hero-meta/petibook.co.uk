@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createServerClient()
-    const storageClient = createServiceRoleClient()
+    const serviceSupabase = createServiceRoleClient()
     const { data: { user } } = await supabase.auth.getUser()
     console.log('[n8n webhook] debug-1');
 
@@ -41,10 +41,10 @@ export async function POST(request: NextRequest) {
     }
     console.log('[n8n webhook] debug-4');
 
-    const ownerOptimized = await uploadImage(ownerImage, 'optimized', storageClient)
-    const ownerOriginal = await uploadImage(ownerImage, 'original', storageClient)
-    const petOptimized = await uploadImage(petImage, 'optimized', storageClient)
-    const petOriginal = await uploadImage(petImage, 'original', storageClient)
+    const ownerOptimized = await uploadImage(ownerImage, 'optimized', serviceSupabase)
+    const ownerOriginal = await uploadImage(ownerImage, 'original', serviceSupabase)
+    const petOptimized = await uploadImage(petImage, 'optimized', serviceSupabase)
+    const petOriginal = await uploadImage(petImage, 'original', serviceSupabase)
 
     const { data: order, error: orderError } = await supabase
       .from('petiboo_orders')
@@ -86,22 +86,36 @@ export async function POST(request: NextRequest) {
         const errorText = await n8nResponse.text()
         console.error('[n8n webhook] failed', n8nResponse.status, errorText)
       } else {
+
+
+
         const n8nData = await n8nResponse.json()
+        // const n8nData = [
+        //   {
+        //     "images": [
+        //       {
+        //         "url": "https://v3b.fal.media/files/b/0a869900/CCjsUIg0kOajt8ggZobmI_8619deff27ec4f85a5ac814573a3d3bf.jpg",
+        //         "width": 1024,
+        //         "height": 1024,
+        //         "content_type": "image/jpeg"
+        //       }
+        //     ],
+        //     "timings": {},
+        //     "seed": 3955154547,
+        //     "has_nsfw_concepts": [
+        //       false
+        //     ],
+        //     "prompt": "Create a humorous caricature of the pet from the second image, but with the owner's facial characteristics subtly applied to it. The pet should maintain its species and general appearance, but its facial features (eyes, nose, mouth, expression, face shape) should be modified to humorously resemble the owner from the first image. Use a playful cartoon style with bold outlines, vibrant colors, and exaggerated features to emphasize the comedic resemblance between pet and owner. Keep the pet's body and pose, but transform the face into a funny blend that makes it look like 'this pet definitely belongs to this person.' Use flat 2D colors, bold black outlines, and simplified shapes in the style of the old TV cartoon. Plain, simple background."
+        //   }
+        // ]
+
+
+
         console.log(`[n8n webhook] response - n8nData: ${JSON.stringify(n8nData, null, 2)}`);
-        console.log('[n8n webhook] queued', { order_id: order.id, request_id: n8nData.request_id, callbackUrl })
+        console.log('[n8n webhook] queued', { order_id: order.id, callbackUrl })
 
         const firstResult: any = Array.isArray(n8nData) ? n8nData[0] : n8nData
         const images: any[] = firstResult?.images || []
-
-        for (let i = 0; i < images.length; i++) {
-          await supabase.from('petiboo_generations').insert({
-            order_id: order.id,
-            n8n_request_id: firstResult?.request_id,
-            status: 'queued',
-            has_watermark: isGuest,
-            order: (i + 1),
-          })
-        }
 
         await uploadFalAiGeneratedImages(
           {
@@ -111,7 +125,8 @@ export async function POST(request: NextRequest) {
             prompt: firstResult?.prompt,
             has_nsfw_concepts: firstResult?.has_nsfw_concepts,
           },
-          supabase
+          serviceSupabase,
+          isGuest
         );
 
 
@@ -161,7 +176,7 @@ async function uploadImage(file: File, folder: string, supabase: any): Promise<s
 
 ///////////////////////////////////////////////////////////////// after n8n response /////////////////////////////////////////////////////////////////
 
-export async function uploadFalAiGeneratedImages(n8nResponse: any, supabase: any) {
+export async function uploadFalAiGeneratedImages(n8nResponse: any, supabase: any, isGuest: boolean) {
   try {
     console.log('[n8n response] start upload - 0')
 
@@ -214,23 +229,22 @@ export async function uploadFalAiGeneratedImages(n8nResponse: any, supabase: any
       publicUrls.push(publicUrl)
       console.log('[n8n response] upload complete', { order_id, fileName, publicUrl })
 
-      await supabase
-        .from('petiboo_generations')
-        .update({
-          fal_image_url: imageData.url,
-          permanent_image_url: publicUrl,
-          status: 'completed',
-          width: imageData.width,
-          height: imageData.height,
-          content_type: imageData.content_type,
-          seed: seed,
-          prompt: prompt,
-          has_nsfw_concepts: has_nsfw_concepts?.[0] || false,
-          completed_at: new Date().toISOString()
-        })
-        .eq('order_id', order_id)
-        .eq('order', (j + 1))
+      await supabase.from('petiboo_generations').insert({
+        order_id: order_id,
+        has_watermark: isGuest,
+        fal_image_url: imageData.url,
+        permanent_image_url: publicUrl,
+        status: 'completed',
+        width: imageData.width,
+        height: imageData.height,
+        content_type: imageData.content_type,
+        seed: seed,
+        prompt: prompt,
+        has_nsfw_concepts: has_nsfw_concepts?.[0] || false,
+        completed_at: new Date().toISOString()
+      })
     }
+
     await supabase
       .from('petiboo_orders')
       .update({
@@ -255,18 +269,8 @@ export async function uploadFalAiGeneratedImages(n8nResponse: any, supabase: any
       await supabase.storage.from('images').remove([path])
     }
     console.log('[n8n response] all uploads complete', { order_id, publicUrls: JSON.stringify(publicUrls) })
-    // return NextResponse.json({
-    //   success: true,
-    //   order_id,
-    //   publicUrls,
-    //   message: 'Generated image stored and order updated',
-    // })
   } catch (error: any) {
     console.error('N8N response error:', error)
     throw error;
-    // return NextResponse.json(
-    //   { error: error.message || 'Failed to process callback' },
-    //   { status: 500 }
-    // )
   }
 }
