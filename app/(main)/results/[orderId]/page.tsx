@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase/server'
+import { createServiceRoleClient } from '@/lib/supabase/service'
 import { notFound } from 'next/navigation'
 import OrderStatus from '@/components/OrderStatus'
 
@@ -6,12 +6,13 @@ export default async function ResultsPage({
   params,
   searchParams,
 }: {
-  params: { orderId: string }
-  searchParams?: { order?: string }
+  params: Promise<{ orderId: string }>
+  searchParams?: Promise<{ order?: string }>
 }) {
-  const { orderId } = params
-  const orderIndex = Number(searchParams?.order ?? '0')
-  const supabase = await createServerClient()
+  const { orderId } = await params
+  const resolvedSearch = searchParams ? await searchParams : undefined
+  const orderIndex = Number(resolvedSearch?.order ?? '0')
+  const supabase = createServiceRoleClient()
 
   const { data: order } = await supabase
     .from('petiboo_orders')
@@ -27,10 +28,10 @@ export default async function ResultsPage({
     .from('petiboo_generations')
     .select('*')
     .eq('order_id', orderId)
-    .order('order', { ascending: true })
+    .order('order_index', { ascending: true })
 
   const generation =
-    generations?.find((g: any) => g.order === orderIndex) ??
+    generations?.find((g: any) => g.order_index === orderIndex) ??
     generations?.[0]
 
   return (
@@ -40,6 +41,7 @@ export default async function ResultsPage({
           orderId={orderId}
           initialOrder={order}
           initialGeneration={generation}
+          generationOrder={orderIndex}
         />
       </div>
     </div>

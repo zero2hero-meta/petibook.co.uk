@@ -54,22 +54,22 @@ export async function POST(request: NextRequest) {
       publicUrls.push(publicUrl)
       console.log('[n8n callback] upload complete', { order_id, fileName, publicUrl })
 
-      await supabase
-        .from('petiboo_generations')
-        .update({
-          fal_image_url: imageData.url,
-          permanent_image_url: publicUrl,
-          status: 'completed',
-          width: imageData.width,
-          height: imageData.height,
-          content_type: imageData.content_type,
-          seed: seed,
-          prompt: prompt,
-          has_nsfw_concepts: has_nsfw_concepts?.[0] || false,
-          completed_at: new Date().toISOString()
-        })
-        .eq('order_id', order_id)
-        .eq('order', i)
+    await supabase
+      .from('petiboo_generations')
+      .update({
+        fal_image_url: imageData.url,
+        permanent_image_url: publicUrl,
+        status: 'completed',
+        width: imageData.width,
+        height: imageData.height,
+        content_type: imageData.content_type,
+        seed: seed,
+        prompt: prompt,
+        has_nsfw_concepts: has_nsfw_concepts?.[0] || false,
+        completed_at: new Date().toISOString()
+      })
+      .eq('order_id', order_id)
+      .eq('order_index', i)
     }
     await supabase
       .from('petiboo_orders')

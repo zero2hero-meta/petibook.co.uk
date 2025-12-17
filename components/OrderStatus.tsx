@@ -8,9 +8,15 @@ interface OrderStatusProps {
   orderId: string
   initialOrder: any
   initialGeneration: any
+  generationOrder?: number
 }
 
-export default function OrderStatus({ orderId, initialOrder, initialGeneration }: OrderStatusProps) {
+export default function OrderStatus({
+  orderId,
+  initialOrder,
+  initialGeneration,
+  generationOrder = 0,
+}: OrderStatusProps) {
   const [order, setOrder] = useState(initialOrder)
   const [generation, setGeneration] = useState(initialGeneration)
   const [error, setError] = useState('')
@@ -20,13 +26,17 @@ export default function OrderStatus({ orderId, initialOrder, initialGeneration }
 
     const pollInterval = setInterval(async () => {
       try {
-        const response = await fetch(`/api/orders/${orderId}/status`)
+        const response = await fetch(
+          `/api/orders/${orderId}/status?order=${generationOrder}`
+        )
         const data = await response.json()
 
         if (data.status === 'completed') {
           setOrder(data)
           setGeneration(data.generation)
           clearInterval(pollInterval)
+        } else if (data.generation) {
+          setGeneration(data.generation)
         }
       } catch (err) {
         console.error('Failed to fetch status:', err)
@@ -34,7 +44,7 @@ export default function OrderStatus({ orderId, initialOrder, initialGeneration }
     }, 10000)
 
     return () => clearInterval(pollInterval)
-  }, [orderId, order.status])
+  }, [orderId, order.status, generationOrder])
 
   if (order.status === 'completed' && generation?.permanent_image_url) {
     return (
@@ -176,11 +186,7 @@ export default function OrderStatus({ orderId, initialOrder, initialGeneration }
         </div>
       </div>
 
-      <div className="mt-8 text-center">
-        <p className="text-gray-600 mb-4">
-          You can close this page. We'll email you at <strong>{order.user_email}</strong>
-        </p>
-      </div>
+      <div className="mt-8 text-center" />
     </div>
   )
 }

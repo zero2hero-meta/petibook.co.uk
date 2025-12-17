@@ -117,6 +117,11 @@ export async function POST(request: NextRequest) {
         const firstResult: any = Array.isArray(n8nData) ? n8nData[0] : n8nData
         const images: any[] = firstResult?.images || []
 
+        await serviceSupabase
+          .from('petiboo_orders')
+          .update({ status: 'processing', processing_started_at: new Date().toISOString() })
+          .eq('id', order.id)
+
         await uploadFalAiGeneratedImages(
           {
             order_id: order.id,
@@ -128,12 +133,6 @@ export async function POST(request: NextRequest) {
           serviceSupabase,
           isGuest
         );
-
-
-        await serviceSupabase
-          .from('petiboo_orders')
-          .update({ status: 'processing', processing_started_at: new Date().toISOString() })
-          .eq('id', order.id)
       }
     }
     console.log('[n8n webhook] debug-6');
@@ -229,30 +228,63 @@ export async function uploadFalAiGeneratedImages(n8nResponse: any, supabase: any
       publicUrls.push(publicUrl)
       console.log('[n8n response] upload complete', { order_id, fileName, publicUrl })
 
-      await supabase.from('petiboo_generations').insert({
-        order_id: order_id,
-        has_watermark: isGuest,
-        fal_image_url: imageData.url,
-        permanent_image_url: publicUrl,
-        status: 'completed',
-        width: imageData.width,
-        height: imageData.height,
-        content_type: imageData.content_type,
-        seed: seed,
-        prompt: prompt,
-        has_nsfw_concepts: has_nsfw_concepts?.[0] || false,
-        completed_at: new Date().toISOString(),
-        order: j,
-      })
-    }
+      const { data: updatedRows, error: updateError } = await supabase
+        .from('petiboo_generations')
+        .update({
+          fal_image_url: imageData.url,
+          permanent_image_url: publicUrl,
+          status: 'completed',
+          width: imageData.width,
+          height: imageData.height,
+          content_type: imageData.content_type,
+          seed: seed,
+          prompt: prompt,
+          has_nsfw_concepts: has_nsfw_concepts?.[0] || false,
+          completed_at: new Date().toISOString(),
+        })
+        .eq('order_id', order_id)
+        .eq('order_index', j)
+        .select('id')
 
-    await supabase
+      if (updateError) {
+        throw updateError
+      }
+
+      if (!updatedRows || updatedRows.length === 0) {
+        const { error: insertError } = await supabase
+          .from('petiboo_generations')
+          .insert({
+            order_id: order_id,
+            has_watermark: isGuest,
+            fal_image_url: imageData.url,
+            permanent_image_url: publicUrl,
+            status: 'completed',
+            width: imageData.width,
+            height: imageData.height,
+            content_type: imageData.content_type,
+            seed: seed,
+            prompt: prompt,
+            has_nsfw_concepts: has_nsfw_concepts?.[0] || false,
+            completed_at: new Date().toISOString(),
+            order_index: j,
+          })
+
+        if (insertError) {
+          throw insertError
+        }
+      }
+    }
+    console.log('[n8n response] all images uploaded, updating order status', { order_id });
+    const { error: orderUpdateError } = await supabase
       .from('petiboo_orders')
       .update({
         status: 'completed',
         completed_at: new Date().toISOString()
       })
       .eq('id', order_id)
+    if (orderUpdateError) {
+      throw orderUpdateError
+    }
 
     const { data: orderData } = await supabase
       .from('petiboo_orders')

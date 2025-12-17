@@ -1,4 +1,4 @@
-import { createServerClient } from '@/lib/supabase/server'
+import { createServiceRoleClient } from '@/lib/supabase/service'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(
@@ -9,7 +9,7 @@ export async function GET(
     const { orderId } = await params
     const searchParams = new URL(request.url).searchParams
     const orderIndex = Number(searchParams.get('order') ?? '0')
-    const supabase = await createServerClient()
+    const supabase = createServiceRoleClient()
 
     const { data: order, error } = await supabase
       .from('petiboo_orders')
@@ -24,13 +24,15 @@ export async function GET(
           permanent_image_url,
           status,
           has_watermark,
-          order
+          order_index
         )
       `)
       .eq('id', orderId)
-      .order('order', { referencedTable: 'petiboo_generations', ascending: true })
+      .order('order_index', { referencedTable: 'petiboo_generations', ascending: true })
       .single()
 
+    console.log('Order status check:', { orderId, orderIndex, order, error })
+    console.log('order data:', JSON.stringify(order, null, 2))
     if (error || !order) {
       return NextResponse.json(
         { error: 'Order not found' },
@@ -39,10 +41,10 @@ export async function GET(
     }
 
     const generation =
-      order.petiboo_generations?.find((g: any) => g.order === orderIndex) ??
+      order.petiboo_generations?.find((g: any) => g.order_index === orderIndex) ??
       order.petiboo_generations?.[0] ??
       null
-
+    console.log('Generation found:', generation)
     return NextResponse.json({
       order_id: order.id,
       status: order.status,
