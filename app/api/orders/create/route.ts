@@ -89,28 +89,30 @@ export async function POST(request: NextRequest) {
         const n8nData = await n8nResponse.json()
         console.log(`[n8n webhook] response - n8nData: ${JSON.stringify(n8nData, null, 2)}`);
         console.log('[n8n webhook] queued', { order_id: order.id, request_id: n8nData.request_id, callbackUrl })
-        const data: any = n8nData[0] || {};
-        const images: any[] = data.images || [];
-        for (let i = 0; i < images.length; i++) {
-          console.log(`[n8n webhook] image data: ${JSON.stringify(i, null, 2)}`);
 
+        const firstResult: any = Array.isArray(n8nData) ? n8nData[0] : n8nData
+        const images: any[] = firstResult?.images || []
+
+        for (let i = 0; i < images.length; i++) {
           await supabase.from('petiboo_generations').insert({
             order_id: order.id,
-            n8n_request_id: data.request_id,// || `manual_${Date.now()}`,
+            n8n_request_id: firstResult?.request_id,
             status: 'queued',
-            has_watermark: isGuest
-          });
+            has_watermark: isGuest,
+            order: (i + 1),
+          })
         }
-        // const callbackUrl = `${request.nextUrl.origin}/api/n8n/callback`
-        // await fetch(callbackUrl, {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify({
-        //     order_id: order.id,
-        //     ...data
-        //   })
-        // })
-        await uploadFalAiGeneratedImages({ ...data, order_id: order.id }, supabase);
+
+        await uploadFalAiGeneratedImages(
+          {
+            order_id: order.id,
+            images,
+            seed: firstResult?.seed,
+            prompt: firstResult?.prompt,
+            has_nsfw_concepts: firstResult?.has_nsfw_concepts,
+          },
+          supabase
+        );
 
 
         await supabase
@@ -168,13 +170,21 @@ export async function uploadFalAiGeneratedImages(n8nResponse: any, supabase: any
     // const body = await request.json()
     console.log('[n8n response] start upload - 1', { n8nResponse })
 
+    const normalized = Array.isArray(n8nResponse)
+      ? n8nResponse[0]
+      : n8nResponse?.images
+        ? n8nResponse
+        : n8nResponse?.[0]
+          ? n8nResponse[0]
+          : n8nResponse
+
     const {
       order_id,
       images,
       seed,
       prompt,
       has_nsfw_concepts
-    } = n8nResponse;
+    } = normalized;
     console.log('[n8n response] start upload - 1.5', { order_id, imagesLength: images?.length });
     if (!order_id || !images || images.length === 0) {
       throw new Error('400 - Missing required data.order_id or images issue');
@@ -196,8 +206,8 @@ export async function uploadFalAiGeneratedImages(n8nResponse: any, supabase: any
     let imageData;
     const publicUrls = [];
     console.log('[n8n response] start upload - 4', { imagesLength: images.length });
-    for (let i = 0; i < images.length; i++) { // generates as much as generated images 
-      imageData = images[i];
+    for (let j = 0; j < images.length; j++) { // generates as much as generated images 
+      imageData = images[j];
       console.log('[n8n response] start upload', { order_id, fileUrl: imageData.url })
       const fileName = `generated/${order_id}/${Date.now()}.jpg`
       const publicUrl = await uploadRemoteImage(supabase, imageData.url, fileName, imageData.content_type || 'image/jpeg')
@@ -219,7 +229,7 @@ export async function uploadFalAiGeneratedImages(n8nResponse: any, supabase: any
           completed_at: new Date().toISOString()
         })
         .eq('order_id', order_id)
-        .eq('order', i)
+        .eq('order', (j + 1))
     }
     await supabase
       .from('petiboo_orders')
