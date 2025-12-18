@@ -73,7 +73,6 @@ export interface PackageConfig {
   ai_edits: number
   human_edits?: string
   features: string[]
-  imageCount: number
 }
 
 export const PACKAGES: Record<string, PackageConfig> = {
@@ -84,7 +83,6 @@ export const PACKAGES: Record<string, PackageConfig> = {
     max_styles: 1,
     processing_time: '2 hours',
     ai_edits: 0,
-    imageCount: 1,
     features: [
       '1 caricature with watermark',
       'South Park style',
@@ -95,11 +93,10 @@ export const PACKAGES: Record<string, PackageConfig> = {
   starter: {
     name: 'Starter',
     price: 9.99,
-    images_per_style: 20,
+    images_per_style: 10,
     max_styles: 1,
     processing_time: '30 minutes',
     ai_edits: 2,
-    imageCount: 20,
     features: [
       '10 high-quality 4K caricatures',
       '1 style',
@@ -112,13 +109,12 @@ export const PACKAGES: Record<string, PackageConfig> = {
   popular: {
     name: 'Popular',
     price: 14.99,
-    images_per_style: 20,
+    images_per_style: 10,
     max_styles: 3,
     processing_time: '1 hours',
     ai_edits: 4,
-    imageCount: 25,
     features: [
-      '25 high-quality 4K caricatures',
+      '30 high-quality 4K caricatures',
       '3 styles',
       'Ready in 1 hours',
       'Email support in 24 hours',
@@ -129,12 +125,11 @@ export const PACKAGES: Record<string, PackageConfig> = {
   premium: {
     name: 'Premium',
     price: 24.99,
-    images_per_style: 20,
+    images_per_style: 10,
     max_styles: 6,
     processing_time: '1 hour',
     ai_edits: 8,
     human_edits: 'unlimited_on_one',
-    imageCount: 60,
     features: [
       '60 high-quality 4K caricatures',
       '6 styles',

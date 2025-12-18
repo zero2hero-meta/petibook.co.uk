@@ -241,6 +241,10 @@ export default function CreatePage() {
     setCurrentStep(3)
   }
 
+  const handleStepThreeNext = () => {
+    setCurrentStep(4)
+  }
+
   const handleSubmit = async () => {
     if (!ownerImage || !petImage) {
       setError('Please upload both photos')
@@ -315,38 +319,26 @@ export default function CreatePage() {
 
         <div className="card max-w-5xl mx-auto">
           <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-500 mb-10">
-            <div className="flex items-center gap-2">
-              <span
-                className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
-                  currentStep === 1 ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-700'
-                }`}
-              >
-                1
-              </span>
-              <span className="font-semibold text-gray-700">Upload Photos</span>
-            </div>
-            <span className="hidden md:block h-px w-16 bg-purple-200" />
-            <div className="flex items-center gap-2">
-              <span
-                className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
-                  currentStep === 2 ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-700'
-                }`}
-              >
-                2
-              </span>
-              <span className="font-semibold text-gray-700">Choose Styles</span>
-            </div>
-            <span className="hidden md:block h-px w-16 bg-purple-200" />
-            <div className="flex items-center gap-2">
-              <span
-                className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
-                  currentStep === 3 ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-700'
-                }`}
-              >
-                3
-              </span>
-              <span className="font-semibold text-gray-700">Review & Create</span>
-            </div>
+            {[
+              { step: 1, label: 'Upload Photos' },
+              { step: 2, label: 'Choose Styles' },
+              { step: 3, label: 'Choose Package' },
+              { step: 4, label: 'Review & Create' },
+            ].map((item, idx) => (
+              <div key={item.step} className="flex items-center gap-2">
+                {idx !== 0 && <span className="hidden md:block h-px w-16 bg-purple-200" />}
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold ${
+                      currentStep === item.step ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-700'
+                    }`}
+                  >
+                    {item.step}
+                  </span>
+                  <span className="font-semibold text-gray-700">{item.label}</span>
+                </div>
+              </div>
+            ))}
           </div>
 
           <div className="space-y-12">
@@ -527,46 +519,30 @@ export default function CreatePage() {
                       <li>Popular styles load fast and produce the most consistent results.</li>
                       <li>Seasonal styles are great for gifts or profile upgrades.</li>
                     </ul>
-                  </div>
-                  <div className="rounded-2xl border border-purple-100 bg-white p-5">
-                    <h3 className="font-semibold text-gray-800 mb-3">Package limit</h3>
-                    <p className="text-sm text-gray-600 mb-4">
-                      Free includes 1 style. Upgrade to unlock 3 or 6 style selections.
-                    </p>
-                    <div className="grid gap-3">
-                      {(Object.keys(PACKAGES) as PackageKey[]).map((key) => {
-                        const pkg = PACKAGES[key]
-                        const isSelected = selectedPackage === key
-                        return (
-                          <button
-                            key={key}
-                            type="button"
-                            onClick={() => setSelectedPackage(key)}
-                            disabled={isGuest && key !== 'free'}
-                            className={`flex items-center justify-between rounded-xl border px-4 py-3 text-left transition ${
-                              isSelected
-                                ? 'border-purple-500 bg-purple-50 text-purple-700'
-                                : 'border-gray-200 bg-white hover:border-purple-200'
-                            } ${isGuest && key !== 'free' ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          >
-                            <div>
-                              <p className="font-semibold text-sm">{pkg.name}</p>
-                              <p className="text-xs text-gray-500">
-                                {pkg.max_styles} styles · {pkg.images_per_style * pkg.max_styles} images
-                              </p>
-                            </div>
-                            <span className="text-sm font-semibold text-gray-700">
-                              {pkg.price === 0 ? 'Free' : `£${pkg.price}`}
-                            </span>
-                          </button>
-                        )
-                      })}
-                    </div>
-                    {isGuest && (
-                      <p className="text-xs text-gray-500 mt-4">
-                        Sign in to unlock paid packages and more styles.
+                    <div className="mt-3 flex items-start gap-2 text-sm text-green-700">
+                      <span className="w-5 h-5 flex items-center justify-center rounded-full bg-green-100 text-green-700 font-bold text-xs">
+                        i
+                      </span>
+                      <p className="leading-snug">
+                        You can choose{' '}
+                        <button
+                          type="button"
+                          onClick={() => setCurrentStep(3)}
+                          className="font-semibold underline hover:text-green-800"
+                        >
+                          Popular
+                        </button>{' '}
+                        or{' '}
+                        <button
+                          type="button"
+                          onClick={() => setCurrentStep(3)}
+                          className="font-semibold underline hover:text-green-800"
+                        >
+                          Premium
+                        </button>{' '}
+                        packages to select multiple styles—more styles, more fun caricatures.
                       </p>
-                    )}
+                    </div>
                   </div>
                 </div>
 
@@ -583,20 +559,96 @@ export default function CreatePage() {
                     onClick={handleStepTwoNext}
                     className="btn-primary"
                   >
-                    Continue to results
+                    Continue to packages
                   </button>
                 </div>
               </section>
             )}
 
             {currentStep === 3 && (
+              <section className="rounded-3xl border border-purple-100 bg-white/80 p-6 md:p-8 shadow-sm">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center">
+                    <Palette className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.2em] text-purple-500 font-semibold">Step 3</p>
+                    <h2 className="text-2xl font-bold text-gray-800">Choose Your Package</h2>
+                  </div>
+                </div>
+                <p className="text-gray-600 mb-6">
+                  Pick a package to unlock more styles and images. Your first caricature is free, and you can upgrade anytime.
+                </p>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {(Object.keys(PACKAGES) as PackageKey[]).map((key) => {
+                    const pkg = PACKAGES[key]
+                    const isSelected = selectedPackage === key
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setSelectedPackage(key)}
+                        disabled={isGuest && key !== 'free'}
+                        className={`rounded-2xl border p-5 text-left transition h-full ${
+                          isSelected
+                            ? 'border-purple-500 ring-2 ring-purple-200 bg-purple-50'
+                            : 'border-gray-200 bg-white hover:border-purple-200'
+                        } ${isGuest && key !== 'free' ? 'opacity-60 cursor-not-allowed' : ''}`}
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <div>
+                            <p className="text-sm font-semibold text-gray-800">{pkg.name}</p>
+                            <p className="text-xs text-gray-500">{pkg.processing_time}</p>
+                          </div>
+                          <p className="text-lg font-bold text-purple-600">
+                            {pkg.price === 0 ? 'Free' : `£${pkg.price}`}
+                          </p>
+                        </div>
+                        <p className="text-sm text-gray-600 mb-3">
+                          {pkg.max_styles} styles · {pkg.images_per_style * pkg.max_styles} images
+                        </p>
+                        <ul className="space-y-1 text-xs text-gray-500">
+                          {pkg.features.slice(0, 3).map((feature, idx) => (
+                            <li key={idx}>• {feature}</li>
+                          ))}
+                        </ul>
+                      </button>
+                    )
+                  })}
+                </div>
+                {isGuest && (
+                  <p className="text-xs text-gray-500 mt-4">
+                    Sign in to unlock paid packages and more styles.
+                  </p>
+                )}
+
+                <div className="mt-8 flex flex-wrap justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep(2)}
+                    className="rounded-lg border border-gray-200 px-5 py-2 font-semibold text-gray-600 hover:border-purple-200"
+                  >
+                    Back to styles
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleStepThreeNext}
+                    className="btn-primary"
+                  >
+                    Continue to review
+                  </button>
+                </div>
+              </section>
+            )}
+
+            {currentStep === 4 && (
               <section className="rounded-3xl border border-purple-100 bg-white p-6 md:p-8 shadow-sm">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center">
                     <Wand2 className="w-6 h-6" />
                   </div>
                   <div>
-                    <p className="text-xs uppercase tracking-[0.2em] text-purple-500 font-semibold">Step 3</p>
+                    <p className="text-xs uppercase tracking-[0.2em] text-purple-500 font-semibold">Step 4</p>
                     <h2 className="text-2xl font-bold text-gray-800">Review & Create</h2>
                   </div>
                 </div>
@@ -690,7 +742,7 @@ export default function CreatePage() {
                 <div className="mt-6 flex flex-wrap justify-between gap-3">
                   <button
                     type="button"
-                    onClick={() => setCurrentStep(2)}
+                    onClick={() => setCurrentStep(3)}
                     className="rounded-lg border border-gray-200 px-5 py-2 font-semibold text-gray-600 hover:border-purple-200"
                   >
                     Back
