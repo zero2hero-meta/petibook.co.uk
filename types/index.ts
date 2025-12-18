@@ -73,6 +73,7 @@ export interface PackageConfig {
   ai_edits: number
   human_edits?: string
   features: string[]
+  imageCount: number
 }
 
 export const PACKAGES: Record<string, PackageConfig> = {
@@ -83,6 +84,7 @@ export const PACKAGES: Record<string, PackageConfig> = {
     max_styles: 1,
     processing_time: '2 hours',
     ai_edits: 0,
+    imageCount: 1,
     features: [
       '1 caricature with watermark',
       'South Park style',
@@ -92,15 +94,16 @@ export const PACKAGES: Record<string, PackageConfig> = {
   },
   starter: {
     name: 'Starter',
-    price: 25,
+    price: 9.99,
     images_per_style: 20,
     max_styles: 1,
-    processing_time: '2 hours',
+    processing_time: '30 minutes',
     ai_edits: 2,
+    imageCount: 20,
     features: [
-      '20 high-quality 4K caricatures',
+      '10 high-quality 4K caricatures',
       '1 style',
-      'Ready in 2 hours',
+      'Ready in 30 minutes',
       'Email support in 48 hours',
       '2 AI Studio edits',
       'Commercial license'
@@ -108,15 +111,16 @@ export const PACKAGES: Record<string, PackageConfig> = {
   },
   popular: {
     name: 'Popular',
-    price: 35,
+    price: 14.99,
     images_per_style: 20,
     max_styles: 3,
-    processing_time: '1.5 hours',
+    processing_time: '1 hours',
     ai_edits: 4,
+    imageCount: 25,
     features: [
-      '60 high-quality 4K caricatures',
+      '25 high-quality 4K caricatures',
       '3 styles',
-      'Ready in 1.5 hours',
+      'Ready in 1 hours',
       'Email support in 24 hours',
       '4 AI Studio edits',
       'Commercial license'
@@ -124,14 +128,15 @@ export const PACKAGES: Record<string, PackageConfig> = {
   },
   premium: {
     name: 'Premium',
-    price: 45,
+    price: 24.99,
     images_per_style: 20,
     max_styles: 6,
     processing_time: '1 hour',
     ai_edits: 8,
     human_edits: 'unlimited_on_one',
+    imageCount: 60,
     features: [
-      '120 high-quality 4K caricatures',
+      '60 high-quality 4K caricatures',
       '6 styles',
       'Ready in 1 hour',
       'Priority support in 12 hours',
