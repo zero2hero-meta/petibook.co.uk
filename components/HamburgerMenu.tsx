@@ -26,15 +26,6 @@ export default function HamburgerMenu({ user }: { user: any }) {
     }
   }, [isOpen])
 
-  const handleSignIn = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`
-      }
-    })
-  }
-
   const handleSignOut = async () => {
     await supabase.auth.signOut()
     window.location.href = '/'
@@ -44,14 +35,21 @@ export default function HamburgerMenu({ user }: { user: any }) {
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-2 rounded-lg hover:bg-purple-100 transition-colors"
+        className={`p-2 rounded-lg hover:bg-purple-100 transition-colors flex items-center gap-2 ${
+          user ? 'border border-purple-100 bg-purple-50' : ''
+        }`}
         aria-label="Menu"
       >
-        {isOpen ? (
-          <X className="w-6 h-6 text-gray-700" />
-        ) : (
-          <Menu className="w-6 h-6 text-gray-700" />
+        {user && (
+          <div className="w-8 h-8 rounded-full bg-purple-200 flex items-center justify-center overflow-hidden">
+            {user.user_metadata?.avatar_url ? (
+              <img src={user.user_metadata.avatar_url} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <User className="w-4 h-4 text-purple-700" />
+            )}
+          </div>
         )}
+        {isOpen ? <X className="w-6 h-6 text-gray-700" /> : <Menu className="w-6 h-6 text-gray-700" />}
       </button>
 
       {isOpen && (
@@ -165,13 +163,14 @@ export default function HamburgerMenu({ user }: { user: any }) {
                 <Palette className="w-5 h-5 text-purple-600" />
                 <span className="text-gray-700 font-medium">Try Free (No Login)</span>
               </Link>
-              <button
-                onClick={handleSignIn}
+              <Link
+                href="/login"
                 className="flex items-center space-x-3 px-4 py-3 hover:bg-purple-50 transition-colors w-full border-t border-gray-100"
+                onClick={() => setIsOpen(false)}
               >
                 <User className="w-5 h-5 text-purple-600" />
-                <span className="text-gray-700 font-medium">Sign In with Google</span>
-              </button>
+                <span className="text-gray-700 font-medium">Login / Sign Up</span>
+              </Link>
             </div>
           )}
         </div>

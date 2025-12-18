@@ -156,6 +156,7 @@ export default function CreatePage() {
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
+  const [checkingAuth, setCheckingAuth] = useState(true)
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedStyles, setSelectedStyles] = useState<string[]>([])
   const [activeCategory, setActiveCategory] = useState(STYLE_CATEGORIES[0])
@@ -172,12 +173,15 @@ export default function CreatePage() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user?.email) {
-        setUserEmail(data.user.email)
-        setEmail(data.user.email)
+      if (!data.user) {
+        router.replace('/login?redirect=/create')
+        return
       }
+      setUserEmail(data.user.email || null)
+      setEmail(data.user.email || '')
+      setCheckingAuth(false)
     })
-  }, [supabase])
+  }, [router, supabase])
 
   useEffect(() => {
     if (isGuest && selectedPackage !== 'free') {
@@ -286,6 +290,14 @@ export default function CreatePage() {
 
   return (
     <div className="py-12 bg-gradient-to-br from-purple-50 to-pink-50 min-h-screen">
+      {checkingAuth ? (
+        <div className="container-custom max-w-5xl flex items-center justify-center py-20">
+          <div className="flex items-center gap-3 text-gray-600">
+            <Loader2 className="w-5 h-5 animate-spin" />
+            Checking your account...
+          </div>
+        </div>
+      ) : (
       <div className="container-custom max-w-5xl">
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-coral-500 bg-clip-text text-transparent">
@@ -763,6 +775,7 @@ export default function CreatePage() {
           </div>
         </div>
       </div>
+      )}
     </div>
   )
 }

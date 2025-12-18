@@ -16,7 +16,7 @@ export default async function MainLayout({
     <div className="min-h-screen flex flex-col">
       <Header user={user} />
       <main className="flex-1">{children}</main>
-      <footer className="bg-gray-900 text-white py-12 mt-20">
+      <footer className="bg-gray-900 text-white py-12">
         <div className="container-custom">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
