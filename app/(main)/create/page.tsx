@@ -27,6 +27,7 @@ export default function CreatePage() {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const [checkingAuth, setCheckingAuth] = useState(true)
+  const [freeGenerationUsed, setFreeGenerationUsed] = useState(false)
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedStyles, setSelectedStyles] = useState<string[]>([])
   const [activeCategory, setActiveCategory] = useState(STYLE_CATEGORIES[0])
@@ -42,13 +43,26 @@ export default function CreatePage() {
   )
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) {
         router.replace('/login?redirect=/create')
         return
       }
-      setUserEmail(data.user.email || null)
-      setEmail(data.user.email || '')
+      const authedEmail = data.user.email || ''
+      setUserEmail(authedEmail || null)
+      setEmail(authedEmail)
+
+      try {
+        const { data: profile } = await supabase
+          .from('petiboo_users')
+          .select('free_generation_used')
+          .eq('id', data.user.id)
+          .single()
+        setFreeGenerationUsed(profile?.free_generation_used ?? false)
+      } catch (profileError) {
+        console.error('Failed to load profile', profileError)
+      }
+
       setCheckingAuth(false)
     })
   }, [router, supabase])
@@ -63,6 +77,12 @@ export default function CreatePage() {
     setSelectedStyles((prev) => prev.slice(0, maxStyles))
     setStyleError('')
   }, [maxStyles])
+
+  useEffect(() => {
+    if (freeGenerationUsed && selectedPackage === 'free') {
+      setSelectedPackage('starter')
+    }
+  }, [freeGenerationUsed, selectedPackage])
 
   useEffect(() => {
     setError('')
@@ -112,7 +132,36 @@ export default function CreatePage() {
   }
 
   const handleStepThreeNext = () => {
+    if (freeGenerationUsed && selectedPackage === 'free') {
+      setError('Your free caricature is already used. Please choose a package to continue.')
+      setCurrentStep(3)
+      return
+    }
+
     setCurrentStep(4)
+  }
+
+  const startStripeCheckout = async (pkg: PackageKey) => {
+    try {
+      const response = await fetch('/api/payments/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ package: pkg })
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data?.url) {
+          window.location.href = data.url
+          return
+        }
+      }
+
+      router.push(`/checkout?package=${pkg}`)
+    } catch (err) {
+      console.error('Checkout error', err)
+      setError('Redirecting to payment failed. Please try again.')
+    }
   }
 
   const handleSubmit = async () => {
@@ -130,6 +179,19 @@ export default function CreatePage() {
     setError('')
 
     try {
+      if (freeGenerationUsed && selectedPackage === 'free') {
+        setError('Your free caricature has already been used. Please select a package to continue.')
+        setCurrentStep(3)
+        setUploading(false)
+        return
+      }
+
+      if (selectedPackage !== 'free') {
+        await startStripeCheckout(selectedPackage)
+        setUploading(false)
+        return
+      }
+
       const { data: { user } } = await supabase.auth.getUser()
 
       const formData = new FormData()
@@ -453,17 +515,19 @@ export default function CreatePage() {
                   {(Object.keys(PACKAGES) as PackageKey[]).map((key) => {
                     const pkg = PACKAGES[key]
                     const isSelected = selectedPackage === key
+                    const isFreeDisabled = freeGenerationUsed && key === 'free'
+                    const packageDisabled = (isGuest && key !== 'free') || isFreeDisabled
                     return (
                       <button
                         key={key}
                         type="button"
                         onClick={() => setSelectedPackage(key)}
-                        disabled={isGuest && key !== 'free'}
+                        disabled={packageDisabled}
                         className={`rounded-2xl border p-5 text-left transition h-full ${
                           isSelected
                             ? 'border-purple-500 ring-2 ring-purple-200 bg-purple-50'
                             : 'border-gray-200 bg-white hover:border-purple-200'
-                        } ${isGuest && key !== 'free' ? 'opacity-60 cursor-not-allowed' : ''}`}
+                        } ${packageDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}
                       >
                         <div className="flex items-center justify-between mb-3">
                           <div>
@@ -486,6 +550,11 @@ export default function CreatePage() {
                     )
                   })}
                 </div>
+                {freeGenerationUsed && (
+                  <p className="text-sm text-red-500 mt-3">
+                    You have already used your free caricature. Please choose a paid package to continue.
+                  </p>
+                )}
                 {isGuest && (
                   <p className="text-xs text-gray-500 mt-4">
                     Sign in to unlock paid packages and more styles.

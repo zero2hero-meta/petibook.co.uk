@@ -27,9 +27,11 @@ export async function POST(request: NextRequest) {
     const supabase = await createServerClient()
     const serviceSupabase = createServiceRoleClient()
     const { data: { user } } = await supabase.auth.getUser()
-    console.log('[n8n webhook] debug-1');
 
     const formData = await request.formData()
+    const selectedPackage = (formData.get('package') as string) || 'free'
+    console.log('[n8n webhook] debug-1');
+
     const ownerImage = formData.get('owner_image') as File
     const petImage = formData.get('pet_image') as File
     const email = formData.get('email') as string
@@ -46,9 +48,18 @@ export async function POST(request: NextRequest) {
           }
         })()
         : []
-    const selectedPackage = formData.get('package') as string
 
-    console.log('[n8n webhook] debug-2');
+    let userProfile: { free_generation_used: boolean } | null = null
+    if (!isGuest && user?.id) {
+      const { data: profile } = await supabase
+        .from('petiboo_users')
+        .select('free_generation_used')
+        .eq('id', user.id)
+        .single()
+      userProfile = profile || null
+    }
+
+    console.log('[n8n webhook] debug-2, isGuest:', isGuest, 'selectedPackage:', selectedPackage, 'userProfile:', userProfile);
 
     if (!ownerImage || !petImage || !email) {
       return NextResponse.json(
@@ -71,6 +82,24 @@ export async function POST(request: NextRequest) {
           { status: 403 }
         )
       }
+    }
+
+    if (!isGuest && selectedPackage === 'free' && userProfile?.free_generation_used) {
+      return NextResponse.json(
+        { error: 'Free caricature already used. Please purchase a package to continue.', payment_required: true },
+        { status: 403 }
+      )
+    }
+
+    if (selectedPackage !== 'free') {
+      return NextResponse.json(
+        {
+          error: 'Payment required before creating order.',
+          payment_required: true,
+          package: selectedPackage
+        },
+        { status: 402 }
+      )
     }
     console.log('[n8n webhook] debug-4');
 
@@ -96,6 +125,13 @@ export async function POST(request: NextRequest) {
       })
       .select()
       .single()
+
+    if (!isGuest && selectedPackage === 'free' && user?.id) {
+      await supabase
+        .from('petiboo_users')
+        .update({ free_generation_used: true })
+        .eq('id', user.id)
+    }
 
     if (orderError) throw orderError
     console.log('[n8n webhook] debug-5');
