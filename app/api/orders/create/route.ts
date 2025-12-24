@@ -1,7 +1,26 @@
+import { STYLE_OPTIONS } from '@/lib/styleOptions'
 import { createServerClient } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { uploadRemoteImage } from '@/lib/supabase/storage'
 import { NextRequest, NextResponse } from 'next/server'
+
+function styleWithDescription(style: string): string {
+  // const styleMap: Record<string, string> = {
+  //   'south_park': 'South Park style',
+  //   'disney': 'Disney style',
+  //   'pixar': 'Pixar style',
+  //   'cartoon': 'Cartoon style',
+  //   'anime': 'Anime style',
+  //   'comic_book': 'Comic Book style',
+  //   'watercolor': 'Watercolor painting style',
+  //   'pop_art': 'Pop Art style',
+  //   'sketch': 'Sketch style',
+  //   'minimalist': 'Minimalist style'
+  // }
+  const sd = STYLE_OPTIONS.find((s) => s.id === style)
+  if (!sd) return style
+  return `${sd.name} with ${sd.description}`
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,6 +34,20 @@ export async function POST(request: NextRequest) {
     const petImage = formData.get('pet_image') as File
     const email = formData.get('email') as string
     const isGuest = formData.get('is_guest') === 'true'
+    const selectedStylesRaw = formData.get('selected_styles')
+    const selectedStyles =
+      typeof selectedStylesRaw === 'string'
+        ? (() => {
+          try {
+            const parsed = JSON.parse(selectedStylesRaw)
+            return Array.isArray(parsed) ? parsed.map((item) => styleWithDescription(String(item))) : [styleWithDescription(selectedStylesRaw)]
+          } catch {
+            return [styleWithDescription(selectedStylesRaw)]
+          }
+        })()
+        : []
+    const selectedPackage = formData.get('package') as string
+
     console.log('[n8n webhook] debug-2');
 
     if (!ownerImage || !petImage || !email) {
@@ -55,10 +88,11 @@ export async function POST(request: NextRequest) {
         owner_image_original: ownerOriginal,
         pet_image_optimized: petOptimized,
         pet_image_original: petOriginal,
-        package: 'free',
+        package: selectedPackage || 'free',
         num_images: 1,
         is_guest: isGuest,
-        status: 'pending'
+        status: 'pending',
+        selected_styles: selectedStyles,
       })
       .select()
       .single()
@@ -78,6 +112,7 @@ export async function POST(request: NextRequest) {
           image_url2: petOriginal,
           user_email: email,
           is_guest: isGuest,
+          selected_styles: selectedStyles,
           callback_url: callbackUrl,
         })
       })
