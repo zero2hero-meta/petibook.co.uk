@@ -62,6 +62,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 N8N_WEBHOOK_URL=your_n8n_webhook_url
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_key
 STRIPE_SECRET_KEY=your_stripe_secret
+STRIPE_WEBHOOK_SECRET=your_stripe_webhook_secret
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 ```
 
 3. Run the development server:
@@ -69,6 +71,10 @@ STRIPE_SECRET_KEY=your_stripe_secret
 ```bash
 npm run dev
 ```
+
+4. Stripe webhook:
+   - Set your Stripe endpoint to `https://your-domain.com/api/payments/webhook`
+   - Use the signing secret in `STRIPE_WEBHOOK_SECRET`
 
 4. Open [http://localhost:3000](http://localhost:3000)
 

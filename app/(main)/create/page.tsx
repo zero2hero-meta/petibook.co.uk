@@ -28,6 +28,15 @@ export default function CreatePage() {
   const [error, setError] = useState('')
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [freeGenerationUsed, setFreeGenerationUsed] = useState(false)
+  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null)
+  const [paymentVerified, setPaymentVerified] = useState(false)
+  const [quota, setQuota] = useState<{
+    package: string
+    remaining_images: number
+    remaining_styles: number
+    images_per_style: number
+    max_styles: number
+  } | null>(null)
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedStyles, setSelectedStyles] = useState<string[]>([])
   const [activeCategory, setActiveCategory] = useState(STYLE_CATEGORIES[0])
@@ -37,6 +46,17 @@ export default function CreatePage() {
   const supabase = createClient()
   const isGuest = !userEmail
   const maxStyles = PACKAGES[selectedPackage].max_styles
+  const stylesRequired = Math.max(1, selectedStyles.length || 1)
+  // We currently generate one image per style selection (not the full package allocation) per request
+  const imagesRequired = stylesRequired
+  const hasExistingQuota = useMemo(() => {
+    if (!quota) return false
+    return (
+      quota.package === selectedPackage &&
+      quota.remaining_images >= imagesRequired &&
+      quota.remaining_styles >= stylesRequired
+    )
+  }, [quota, selectedPackage, imagesRequired, stylesRequired])
   const filteredStyles = useMemo(
     () => STYLE_OPTIONS.filter((style) => style.category === activeCategory),
     [activeCategory]
@@ -59,6 +79,13 @@ export default function CreatePage() {
           .eq('id', data.user.id)
           .single()
         setFreeGenerationUsed(profile?.free_generation_used ?? false)
+
+        const { data: quotaData } = await supabase
+          .from('petiboo_quotas')
+          .select('package, remaining_images, remaining_styles, images_per_style, max_styles')
+          .eq('user_id', data.user.id)
+          .single()
+        setQuota(quotaData || null)
       } catch (profileError) {
         console.error('Failed to load profile', profileError)
       }
@@ -66,6 +93,46 @@ export default function CreatePage() {
       setCheckingAuth(false)
     })
   }, [router, supabase])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const sessionId = params.get('session_id')
+    const pkg = params.get('package')
+
+    if (sessionId) {
+      setUploading(true)
+      fetch(`/api/payments/session?session_id=${sessionId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.payment_intent_id) {
+            setPaymentIntentId(data.payment_intent_id)
+            setPaymentVerified(true)
+          }
+          if (data?.package && (Object.keys(PACKAGES) as PackageKey[]).includes(data.package)) {
+            setSelectedPackage(data.package as PackageKey)
+          } else if (pkg && (Object.keys(PACKAGES) as PackageKey[]).includes(pkg as PackageKey)) {
+            setSelectedPackage(pkg as PackageKey)
+          }
+          if (data?.package && data.package !== 'free') {
+            supabase.auth.getUser().then(async ({ data: authData }) => {
+              if (authData.user) {
+                const { data: quotaData } = await supabase
+                  .from('petiboo_quotas')
+                  .select('package, remaining_images, remaining_styles, images_per_style, max_styles')
+                  .eq('user_id', authData.user.id)
+                  .single()
+                setQuota(quotaData || null)
+              }
+            })
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to verify Stripe session', err)
+          setError('Could not verify your payment. Please try again.')
+        })
+        .finally(() => setUploading(false))
+    }
+  }, [])
 
   useEffect(() => {
     if (isGuest && selectedPackage !== 'free') {
@@ -175,6 +242,21 @@ export default function CreatePage() {
       return
     }
 
+    if (selectedPackage !== 'free' && quota) {
+      if (
+        quota.remaining_images < imagesRequired ||
+        quota.remaining_styles < stylesRequired ||
+        quota.package !== selectedPackage
+      ) {
+        setError('Your package limits are reached. Please purchase a new package.')
+        setPaymentIntentId(null)
+        setPaymentVerified(false)
+        setUploading(false)
+        await startStripeCheckout(selectedPackage)
+        return
+      }
+    }
+
     setUploading(true)
     setError('')
 
@@ -187,9 +269,17 @@ export default function CreatePage() {
       }
 
       if (selectedPackage !== 'free') {
-        await startStripeCheckout(selectedPackage)
-        setUploading(false)
-        return
+        if (!paymentIntentId && !hasExistingQuota) {
+          await startStripeCheckout(selectedPackage)
+          setUploading(false)
+          return
+        }
+
+        if (!paymentVerified && !hasExistingQuota) {
+          setError('We could not verify your payment yet. Please try again or contact support.')
+          setUploading(false)
+          return
+        }
       }
 
       const { data: { user } } = await supabase.auth.getUser()
@@ -201,6 +291,9 @@ export default function CreatePage() {
       formData.append('is_guest', user ? 'false' : 'true')
       formData.append('selected_styles', JSON.stringify(selectedStyles))
       formData.append('package', selectedPackage)
+      if (paymentIntentId) {
+        formData.append('payment_intent_id', paymentIntentId)
+      }
 
     console.log('[before n8n callback] start upload - 0')
 
@@ -223,7 +316,7 @@ export default function CreatePage() {
       setUploading(false)
     }
   }
-
+  
   return (
     <div className="py-12 bg-gradient-to-br from-purple-50 to-pink-50 min-h-screen">
       {checkingAuth ? (
@@ -242,11 +335,23 @@ export default function CreatePage() {
           <p className="text-xl text-gray-600">
             Upload photos, choose a style, and get hilarious caricatures in minutes
           </p>
-          <div className="mt-4 inline-block bg-yellow-100 border border-yellow-300 rounded-lg px-6 py-3">
-            <p className="text-yellow-800 font-medium">
-              First caricature is FREE. Sign in to unlock more styles and packs.
-            </p>
-          </div>
+          {quota && quota.package !== 'free' && (
+            <div className="mt-4 inline-block bg-green-100 border border-green-300 rounded-lg px-6 py-3 text-green-800 font-semibold">
+              Active package: {PACKAGES[quota.package]?.name || quota.package} · Remaining: {quota.remaining_images} images / {quota.remaining_styles} styles
+            </div>
+          )}
+          {paymentVerified && (
+            <div className="mt-4 inline-block bg-green-100 border border-green-300 rounded-lg px-6 py-3 text-green-800 font-medium">
+              Payment verified. You can now create your caricatures with the selected package.
+            </div>
+          )}
+          {!quota || quota.package === 'free' ? (
+            <div className="mt-4 inline-block bg-yellow-100 border border-yellow-300 rounded-lg px-6 py-3">
+              <p className="text-yellow-800 font-medium">
+                First caricature is FREE. Sign in to unlock more styles and packs.
+              </p>
+            </div>
+          ) : null}
         </div>
 
         <div className="card max-w-5xl mx-auto">
@@ -546,11 +651,19 @@ export default function CreatePage() {
                             <li key={idx}>• {feature}</li>
                           ))}
                         </ul>
+                        {isSelected && paymentVerified && pkg.price > 0 && (
+                          <p className="text-xs text-green-600 font-semibold mt-3">Payment verified</p>
+                        )}
+                        {quota && quota.package === key && (
+                          <p className="text-xs text-green-600 font-semibold mt-2">
+                            Remaining: {quota.remaining_images} images / {quota.remaining_styles} styles
+                          </p>
+                        )}
                       </button>
                     )
                   })}
                 </div>
-                {freeGenerationUsed && (
+                {freeGenerationUsed && (!quota || quota.package === 'free') && (
                   <p className="text-sm text-red-500 mt-3">
                     You have already used your free caricature. Please choose a paid package to continue.
                   </p>
@@ -641,28 +754,30 @@ export default function CreatePage() {
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-6 mb-6">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-700">
-                    <div>
-                      <p className="font-semibold text-gray-800">Package:</p>
-                      <p>{PACKAGES[selectedPackage].name}</p>
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-800">Total Images:</p>
-                      <p>{PACKAGES[selectedPackage].images_per_style * Math.max(1, selectedStyles.length)}</p>
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-800">Processing Time:</p>
-                      <p>{PACKAGES[selectedPackage].processing_time}</p>
-                    </div>
-                    <div>
-                      <p className="font-semibold text-gray-800">Total:</p>
-                      <p className="text-xl font-bold text-purple-600">
-                        {PACKAGES[selectedPackage].price === 0 ? '£0' : `£${PACKAGES[selectedPackage].price}`}
-                      </p>
+                {!hasExistingQuota && (
+                  <div className="rounded-2xl border border-gray-200 bg-gray-50 p-6 mb-6">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-700">
+                      <div>
+                        <p className="font-semibold text-gray-800">Package:</p>
+                        <p>{PACKAGES[selectedPackage].name}</p>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-800">Total Images:</p>
+                        <p>{PACKAGES[selectedPackage].images_per_style * Math.max(1, selectedStyles.length)}</p>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-800">Processing Time:</p>
+                        <p>{PACKAGES[selectedPackage].processing_time}</p>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-800">Total:</p>
+                        <p className="text-xl font-bold text-purple-600">
+                          {PACKAGES[selectedPackage].price === 0 ? '£0' : `£${PACKAGES[selectedPackage].price}`}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {!userEmail && (
                   <div className="mb-6">

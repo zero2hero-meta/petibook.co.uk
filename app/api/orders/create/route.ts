@@ -3,6 +3,7 @@ import { createServerClient } from '@/lib/supabase/server'
 import { createServiceRoleClient } from '@/lib/supabase/service'
 import { uploadRemoteImage } from '@/lib/supabase/storage'
 import { NextRequest, NextResponse } from 'next/server'
+import { PACKAGES } from '@/types'
 
 function styleWithDescription(style: string): string {
   // const styleMap: Record<string, string> = {
@@ -30,7 +31,15 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData()
     const selectedPackage = (formData.get('package') as string) || 'free'
+    const paymentIntentId = formData.get('payment_intent_id') as string | null
     console.log('[n8n webhook] debug-1');
+    const packageConfig = PACKAGES[selectedPackage as keyof typeof PACKAGES]
+    if (!packageConfig) {
+      return NextResponse.json(
+        { error: 'Invalid package selected.' },
+        { status: 400 }
+      )
+    }
 
     const ownerImage = formData.get('owner_image') as File
     const petImage = formData.get('pet_image') as File
@@ -48,6 +57,9 @@ export async function POST(request: NextRequest) {
           }
         })()
         : []
+    const stylesRequested = Math.max(1, selectedStyles.length)
+    // Each request currently generates one image per style, so consume quota accordingly
+    const imagesRequested = stylesRequested
 
     let userProfile: { free_generation_used: boolean } | null = null
     if (!isGuest && user?.id) {
@@ -91,14 +103,145 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    let quotaForPackage: { remaining_images: number; remaining_styles: number } | null = null
+    let quota: { remaining_images: number; remaining_styles: number; package: string } | null = null
+
+    let payment: {
+      id: string
+      status: string
+      user_id: string | null
+      stripe_payment_intent_id: string | null
+      order_id: string | null
+      amount: number | null
+      currency: string | null
+      package: string | null
+    } | null = null
+
     if (selectedPackage !== 'free') {
+      if (stylesRequested > packageConfig.max_styles) {
+        return NextResponse.json(
+          { error: `You can select up to ${packageConfig.max_styles} styles for this package.` },
+          { status: 400 }
+        )
+      }
+
+      if (user?.id) {
+        const { data: quotaData } = await supabase
+          .from('petiboo_quotas')
+          .select('remaining_images, remaining_styles, package')
+          .eq('user_id', user.id)
+          .single()
+        quota = quotaData || null
+      }
+
+      const quotaSufficient =
+        !!quota &&
+        quota.package === selectedPackage &&
+        quota.remaining_images >= imagesRequested &&
+        quota.remaining_styles >= stylesRequested
+
+      if (!paymentIntentId && !quotaSufficient) {
+        return NextResponse.json(
+          {
+            error: 'Payment required before creating order.',
+            payment_required: true,
+            package: selectedPackage
+          },
+          { status: 402 }
+        )
+      }
+
+      if (paymentIntentId) {
+        const { data: paymentData, error: paymentError } = await supabase
+          .from('petiboo_payments')
+          .select('id, status, user_id, stripe_payment_intent_id, order_id, amount, currency, package')
+          .eq('stripe_payment_intent_id', paymentIntentId)
+          .single()
+
+        if (paymentError || !paymentData || paymentData.status !== 'succeeded') {
+          return NextResponse.json(
+            { error: 'Payment not found or not completed.', payment_required: true },
+            { status: 402 }
+          )
+        }
+
+        payment = paymentData
+
+        if (payment.user_id && user?.id && payment.user_id !== user.id) {
+          return NextResponse.json(
+            { error: 'Payment does not belong to this user.' },
+            { status: 403 }
+          )
+        }
+
+        if (payment.order_id) {
+          return NextResponse.json(
+            { error: 'Payment already used for an order.' },
+            { status: 400 }
+          )
+        }
+
+        if (payment.package && payment.package !== selectedPackage) {
+          return NextResponse.json(
+            { error: 'Selected package does not match payment package.' },
+            { status: 400 }
+          )
+        }
+
+        if ((!quota || quota.package !== selectedPackage) && user?.id) {
+          // Provision quota from paid package if missing or mismatched
+          const remainingImages = packageConfig.images_per_style * packageConfig.max_styles
+          const { data: newQuota, error: quotaCreateError } = await serviceSupabase
+            .from('petiboo_quotas')
+            .upsert({
+              user_id: user.id,
+              package: selectedPackage,
+              remaining_images: remainingImages,
+              remaining_styles: packageConfig.max_styles,
+              images_per_style: packageConfig.images_per_style,
+              max_styles: packageConfig.max_styles,
+              updated_at: new Date().toISOString(),
+            }, {
+              onConflict: 'user_id'
+            })
+            .select()
+            .single()
+
+          if (quotaCreateError) {
+            return NextResponse.json(
+              { error: 'Unable to provision package quota. Please try again.' },
+              { status: 500 }
+            )
+          }
+
+          quota = newQuota
+        }
+      }
+
+      if (!quota || quota.package !== selectedPackage) {
+        return NextResponse.json(
+          { error: 'Package limits exceeded. Please purchase a new package.', payment_required: true },
+          { status: 402 }
+        )
+      }
+
+      if (quota.remaining_images < imagesRequested || quota.remaining_styles < stylesRequested) {
+        return NextResponse.json(
+          { error: 'Package limits exceeded. Please purchase a new package.', payment_required: true },
+          { status: 402 }
+        )
+      }
+
+      quotaForPackage = {
+        remaining_images: quota.remaining_images - imagesRequested,
+        remaining_styles: quota.remaining_styles,
+      }
+    }
+
+    if (isGuest && selectedPackage !== 'free') {
       return NextResponse.json(
-        {
-          error: 'Payment required before creating order.',
-          payment_required: true,
-          package: selectedPackage
-        },
-        { status: 402 }
+        { error: 'Guests cannot purchase packages. Please sign in.' },
+        { status: 401 }
       )
     }
     console.log('[n8n webhook] debug-4');
@@ -118,10 +261,13 @@ export async function POST(request: NextRequest) {
         pet_image_optimized: petOptimized,
         pet_image_original: petOriginal,
         package: selectedPackage || 'free',
-        num_images: 1,
+        num_images: imagesRequested,
         is_guest: isGuest,
         status: 'pending',
         selected_styles: selectedStyles,
+        stripe_payment_id: paymentIntentId || null,
+        stripe_payment_status: paymentIntentId ? 'succeeded' : null,
+        total_price: paymentIntentId && payment && typeof payment.amount === 'number' ? payment.amount : null,
       })
       .select()
       .single()
@@ -134,6 +280,24 @@ export async function POST(request: NextRequest) {
     }
 
     if (orderError) throw orderError
+    if (order?.id && selectedPackage !== 'free' && user?.id && quotaForPackage) {
+      await serviceSupabase
+        .from('petiboo_quotas')
+        .update({
+          remaining_images: Math.max(0, quotaForPackage.remaining_images),
+          remaining_styles: Math.max(0, quotaForPackage.remaining_styles),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id)
+    }
+
+    if (paymentIntentId && order?.id) {
+      await serviceSupabase
+        .from('petiboo_payments')
+        .update({ order_id: order.id })
+        .eq('stripe_payment_intent_id', paymentIntentId)
+    }
+
     console.log('[n8n webhook] debug-5');
 
     const n8nWebhookUrl = process.env.NEXT_N8N_WEBHOOK_URL
