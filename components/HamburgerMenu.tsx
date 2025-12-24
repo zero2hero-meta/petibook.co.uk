@@ -161,7 +161,7 @@ export default function HamburgerMenu({ user }: { user: any }) {
                 onClick={() => setIsOpen(false)}
               >
                 <Palette className="w-5 h-5 text-purple-600" />
-                <span className="text-gray-700 font-medium">Try Free (No Login)</span>
+                <span className="text-gray-700 font-medium">Try Free</span>
               </Link>
               <Link
                 href="/login"
