@@ -21,6 +21,11 @@ export default async function MainLayout({
           <div className="grid md:grid-cols-4 gap-8">
             <div>
               <h3 className="text-2xl font-bold mb-4 bg-gradient-to-r from-purple-400 to-coral-400 bg-clip-text text-transparent">
+                <img
+                  src="/images/homepage-slide/logo1120x120.jpg"
+                  alt="PetiBoo logo"
+                  className="h-14 w-auto rounded-md border border-purple-100 shadow-sm mr-2"
+                />
                 PetiBoo
               </h3>
               <p className="text-gray-400 text-sm">
