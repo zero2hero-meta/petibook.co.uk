@@ -1,8 +1,24 @@
 import Link from 'next/link'
 import { Star, Clock, Shield, Sparkles,Palette,ShieldCheck } from 'lucide-react'
-import { BeforeAfterSlider } from './BeforeAfterSlider'
+import { BeforeAfterPair, BeforeAfterShowcase } from './BeforeAfterShowcase';
 
 export default function Hero() {
+
+
+  const slideImages: BeforeAfterPair[] = [
+  { id: 'ex8', beforeSrc: '/images/homepage-slide/d8-owner.jpg', afterSrc: '/images/homepage-slide/d8-ai.jpg' },
+  { id: 'ex3', beforeSrc: '/images/homepage-slide/d3-owner.jpg', afterSrc: '/images/homepage-slide/d3-ai.jpg' },
+  { id: 'ex4', beforeSrc: '/images/homepage-slide/d4-owner.jpg', afterSrc: '/images/homepage-slide/d4-ai.jpg' },
+  { id: 'ex5', beforeSrc: '/images/homepage-slide/d5-owner.jpg', afterSrc: '/images/homepage-slide/d5-ai.jpg' },
+  { id: 'ex1', beforeSrc: '/images/homepage-slide/d1-owner.jpg', afterSrc: '/images/homepage-slide/d1-ai.jpg', beforeLabel: 'Photos', afterLabel: 'Caricature' },
+  { id: 'ex2', beforeSrc: '/images/homepage-slide/d2-owner.jpg', afterSrc: '/images/homepage-slide/d2-ai.jpg' },
+  { id: 'ex6', beforeSrc: '/images/homepage-slide/d6-owner.jpg', afterSrc: '/images/homepage-slide/d6-ai.jpg' },
+  { id: 'ex7', beforeSrc: '/images/homepage-slide/d7-owner.jpg', afterSrc: '/images/homepage-slide/d7-ai.jpg' },
+  { id: 'ex9', beforeSrc: '/images/homepage-slide/d9-owner.jpg', afterSrc: '/images/homepage-slide/d9-ai.jpg' },
+  { id: 'ex10', beforeSrc: '/images/homepage-slide/d10-owner.jpg', afterSrc: '/images/homepage-slide/d10-ai.jpg' },
+];
+
+
   return (
     <section className="relative bg-gradient-to-br from-purple-50 via-white to-coral-50 py-20 overflow-hidden">
       <div className="absolute inset-0 bg-grid-pattern opacity-5"> </div>
@@ -43,7 +59,7 @@ export default function Hero() {
   <div className="flex items-center gap-3">
     <Clock className="w-6 h-6 text-purple-600" />
     <span>
-      <strong className="text-gray-900">Ready in Under 1 Hour</strong>
+      <strong className="text-gray-900">Ready in Under 1 minute</strong>
     </span>
   </div>
 
@@ -101,14 +117,14 @@ export default function Hero() {
       md:scale-110 
       origin-top
     ">
-      <BeforeAfterSlider
-        beforeSrc="/images/homepage-slide/d1-owner.jpg"
-        afterSrc="/images/homepage-slide/d1-ai.jpg"
-        beforeLabel="Selfie"
-        afterLabel="AI Generated"
-        autoDemo
-        aspectClassName="aspect-[4/5]"
-      />
+<BeforeAfterShowcase
+      items={slideImages}
+      autoPlay
+      autoPlayMs={4500}
+      aspectClassName="aspect-[4/5]"
+      sliderAutoDemo
+      className="max-w-[560px]"
+    />
     </div>
 
   </div>
