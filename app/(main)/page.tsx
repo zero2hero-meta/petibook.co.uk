@@ -3,6 +3,7 @@ import FunShowcase from '@/components/FunShowcase'
 import HowItWorks from '@/components/HowItWorks'
 import Link from 'next/link'
 import { Star, Check, ArrowRight, Zap, Heart, Shield } from 'lucide-react';
+import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
 
 export default function HomePage() {
     const reviews = [

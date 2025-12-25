@@ -153,7 +153,7 @@ export default function LoginPage() {
             <div className="relative bg-white rounded-3xl shadow-xl overflow-hidden border border-white/60">
               <div className="relative h-72 md:h-80">
                 <img
-                  src="https://erliripjhdznygvoxnpw.supabase.co/storage/v1/object/public/images/generated/c7bee2c6-4ca1-476f-8aca-cb7cea7d3252/1765932244399.jpg"
+                  src="images/homepage-slide/d3-ai.jpg"
                   alt="Testimonial"
                   className="w-full h-full object-cover"
                 />
