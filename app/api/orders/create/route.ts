@@ -20,7 +20,7 @@ function styleWithDescription(style: string): string {
   // }
   const sd = STYLE_OPTIONS.find((s) => s.id === style)
   if (!sd) return style
-  return `${sd.name} with ${sd.description}`
+  return sd.name;//`${sd.name} with ${sd.description}`
 }
 
 export async function POST(request: NextRequest) {
