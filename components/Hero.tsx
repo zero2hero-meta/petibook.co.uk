@@ -21,7 +21,7 @@ export default function Hero() {
 
   return (
     <section className="relative bg-gradient-to-br from-purple-50 via-white to-coral-50 py-20 overflow-hidden">
-      <div className="absolute inset-0 bg-grid-pattern opacity-5"> </div>
+      <div className="absolute inset-0 bg-grid-pattern opacity-5 pointer-events-none" aria-hidden="true" />
 
 <div className="max-w-6xl mx-auto">
   <div className="

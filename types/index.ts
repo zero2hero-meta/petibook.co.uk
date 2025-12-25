@@ -95,12 +95,12 @@ export const PACKAGES: Record<string, PackageConfig> = {
     price: 9.99,
     images_per_style: 10,
     max_styles: 1,
-    processing_time: '30 minutes',
+    processing_time: 'Couple of seconds',
     ai_edits: 2,
     features: [
       '10 high-quality 4K caricatures',
       '1 style',
-      'Ready in 30 minutes',
+      'Couple of seconds',
       'Email support in 48 hours',
       '2 AI Studio edits',
       'Commercial license'
@@ -111,12 +111,12 @@ export const PACKAGES: Record<string, PackageConfig> = {
     price: 14.99,
     images_per_style: 10,
     max_styles: 3,
-    processing_time: '1 hours',
+    processing_time: 'Couple of seconds',
     ai_edits: 4,
     features: [
       '30 high-quality 4K caricatures',
       '3 styles',
-      'Ready in 1 hours',
+      'Couple of seconds',
       'Email support in 24 hours',
       '4 AI Studio edits',
       'Commercial license'
@@ -127,16 +127,15 @@ export const PACKAGES: Record<string, PackageConfig> = {
     price: 24.99,
     images_per_style: 10,
     max_styles: 6,
-    processing_time: '1 hour',
+    processing_time: 'Couple of seconds',
     ai_edits: 8,
     human_edits: 'unlimited_on_one',
     features: [
       '60 high-quality 4K caricatures',
       '6 styles',
-      'Ready in 1 hour',
+      'Couple of seconds',
       'Priority support in 12 hours',
       '8 AI Studio edits',
-      'Unlimited human edits on 1 photo',
       '1 free redo',
       'Commercial license'
     ]

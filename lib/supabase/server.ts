@@ -15,7 +15,7 @@ export const createServerClient = async ({ allowCookieWrite = false }: ServerCli
       cookies: {
         getAll: () => cookieStore.getAll(),
         ...(allowCookieWrite && {
-          setAll: (cookiesToSet) => {
+          setAll: (cookiesToSet: { name: any; value: any; options: any }[]) => {
             cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options))
           },
         }),

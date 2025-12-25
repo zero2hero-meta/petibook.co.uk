@@ -3,6 +3,16 @@
 import { useEffect, useState } from 'react'
 import { Loader2, Download, Share2, CheckCircle, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
+import {
+  FacebookShareButton,
+  FacebookIcon,
+  TwitterShareButton,
+  TwitterIcon,
+  LinkedinShareButton,
+  LinkedinIcon,
+  WhatsappShareButton,
+  WhatsappIcon,
+} from 'next-share'
 
 interface OrderStatusProps {
   orderId: string
@@ -47,6 +57,12 @@ export default function OrderStatus({
   }, [orderId, order.status, generationOrder])
 
   if (order.status === 'completed' && generation?.permanent_image_url) {
+    const shareUrl =
+      typeof window !== 'undefined'
+        ? window.location.href
+        : generation.permanent_image_url
+    const shareText = "Check out my pet's caricature!"
+
     return (
       <div>
         <div className="text-center mb-8">
@@ -78,21 +94,32 @@ export default function OrderStatus({
               <Download className="w-5 h-5" />
               Download Image
             </a>
-            <button
-              onClick={() => {
-                if (navigator.share) {
-                  navigator.share({
-                    title: 'My Pet Caricature',
-                    text: 'Check out my pet\'s South Park transformation!',
-                    url: window.location.href
-                  })
-                }
-              }}
-              className="px-6 py-3 bg-gray-200 rounded-lg font-semibold hover:bg-gray-300 transition flex items-center gap-2"
-            >
-              <Share2 className="w-5 h-5" />
-              Share
-            </button>
+            <div className="flex flex-wrap gap-2 justify-center">
+              <TwitterShareButton url={shareUrl} title={shareText}>
+                <div className="px-3 py-3 bg-gray-100 rounded-lg font-semibold hover:bg-gray-200 transition flex items-center gap-2">
+                  <TwitterIcon size={24} round />
+                  <span className="hidden sm:inline">Twitter / X</span>
+                </div>
+              </TwitterShareButton>
+              <FacebookShareButton url={shareUrl} quote={shareText}>
+                <div className="px-3 py-3 bg-gray-100 rounded-lg font-semibold hover:bg-gray-200 transition flex items-center gap-2">
+                  <FacebookIcon size={24} round />
+                  <span className="hidden sm:inline">Facebook</span>
+                </div>
+              </FacebookShareButton>
+              <LinkedinShareButton url={shareUrl} title={shareText}>
+                <div className="px-3 py-3 bg-gray-100 rounded-lg font-semibold hover:bg-gray-200 transition flex items-center gap-2">
+                  <LinkedinIcon size={24} round />
+                  <span className="hidden sm:inline">LinkedIn</span>
+                </div>
+              </LinkedinShareButton>
+              <WhatsappShareButton url={shareUrl} title={shareText} separator=" — ">
+                <div className="px-3 py-3 bg-gray-100 rounded-lg font-semibold hover:bg-gray-200 transition flex items-center gap-2">
+                  <WhatsappIcon size={24} round />
+                  <span className="hidden sm:inline">WhatsApp</span>
+                </div>
+              </WhatsappShareButton>
+            </div>
           </div>
 
           {generation.has_watermark && (

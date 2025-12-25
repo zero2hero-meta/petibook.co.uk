@@ -89,7 +89,7 @@ export default function PricingPage() {
             <div>
               <h3 className="font-semibold text-lg mb-2">How long does it take?</h3>
               <p className="text-gray-600">
-                Processing times vary by package, from 1-2 hours. You'll receive an email notification when your caricatures are ready.
+                Processing times vary by package, from 1-2 minutes. You'll receive an email notification when your caricatures are ready.
               </p>
             </div>
           </div>

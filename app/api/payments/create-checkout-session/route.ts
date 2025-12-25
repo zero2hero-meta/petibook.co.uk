@@ -26,10 +26,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Stripe is not configured' }, { status: 500 })
     }
 
-    const stripe = new Stripe(stripeSecret, { apiVersion: '2023-10-16' })
+    const stripe = new Stripe(stripeSecret, { apiVersion: '2025-02-24.acacia' })
     const origin = request.nextUrl.origin
 
-    const session = await stripe.checkout.sessions.create({
+    if (!pkgKey || !pkg || pkgKey === 'free') {
+      return NextResponse.json({ error: 'Invalid package selected' }, { status: 400 });
+    }
+
+    const params: Stripe.Checkout.SessionCreateParams = {
       mode: 'payment',
       payment_method_types: ['card'],
       customer_email: user.email || undefined,
@@ -54,7 +58,9 @@ export async function POST(request: NextRequest) {
         package_key: pkgKey,
         user_id: user.id,
       },
-    })
+    };
+
+    const session = await stripe.checkout.sessions.create(params);
 
     return NextResponse.json({ url: session.url })
   } catch (error: any) {

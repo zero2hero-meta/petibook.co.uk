@@ -18,7 +18,7 @@ export default async function PaymentHistoryPage() {
     .order('created_at', { ascending: false })
 
   const stripeSecret = process.env.STRIPE_SECRET_KEY
-  const stripe = stripeSecret ? new Stripe(stripeSecret, { apiVersion: '2023-10-16' }) : null
+  const stripe = stripeSecret ? new Stripe(stripeSecret, { apiVersion: '2025-02-24.acacia' }) : null
 
   const paymentsWithLinks = payments
     ? await Promise.all(

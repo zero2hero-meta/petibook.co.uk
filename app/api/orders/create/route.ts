@@ -410,7 +410,7 @@ async function uploadImage(file: File, folder: string, supabase: any): Promise<s
 
 ///////////////////////////////////////////////////////////////// after n8n response /////////////////////////////////////////////////////////////////
 
-export async function uploadFalAiGeneratedImages(n8nResponse: any, supabase: any, isGuest: boolean) {
+async function uploadFalAiGeneratedImages(n8nResponse: any, supabase: any, isGuest: boolean) {
   try {
     console.log('[n8n response] start upload - 0')
 

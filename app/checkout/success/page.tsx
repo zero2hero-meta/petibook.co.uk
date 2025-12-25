@@ -1,9 +1,9 @@
 'use client'
 
+import { Suspense, useEffect } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { useEffect } from 'react'
 
-export default function CheckoutSuccessPage() {
+function CheckoutSuccessContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const sessionId = searchParams.get('session_id')
@@ -42,5 +42,13 @@ export default function CheckoutSuccessPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function CheckoutSuccessPage() {
+  return (
+    <Suspense fallback={null}>
+      <CheckoutSuccessContent />
+    </Suspense>
   )
 }

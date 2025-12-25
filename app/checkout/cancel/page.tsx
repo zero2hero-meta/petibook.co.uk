@@ -1,8 +1,9 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 
-export default function CheckoutCancelPage() {
+function CheckoutCancelContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const pkg = searchParams.get('package')
@@ -31,5 +32,13 @@ export default function CheckoutCancelPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function CheckoutCancelPage() {
+  return (
+    <Suspense fallback={null}>
+      <CheckoutCancelContent />
+    </Suspense>
   )
 }

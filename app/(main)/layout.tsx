@@ -75,6 +75,11 @@ export default async function MainLayout({
                     Terms & Conditions
                   </a>
                 </li>
+                <li>
+                  <a href="/ai-ethics" className="hover:text-white transition">
+                    AI Ethics & Copyright
+                  </a>
+                </li>
               </ul>
             </div>
           </div>
