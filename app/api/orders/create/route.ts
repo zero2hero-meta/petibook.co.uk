@@ -32,7 +32,6 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData()
     const selectedPackage = (formData.get('package') as string) || 'free'
     const paymentIntentId = formData.get('payment_intent_id') as string | null
-    console.log('[n8n webhook] debug-1');
     const packageConfig = PACKAGES[selectedPackage as keyof typeof PACKAGES]
     if (!packageConfig) {
       return NextResponse.json(
@@ -71,15 +70,12 @@ export async function POST(request: NextRequest) {
       userProfile = profile || null
     }
 
-    console.log('[n8n webhook] debug-2, isGuest:', isGuest, 'selectedPackage:', selectedPackage, 'userProfile:', userProfile);
-
     if (!ownerImage || !petImage || !email) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
       )
     }
-    console.log('[n8n webhook] debug-3');
 
     if (isGuest) {
       const { data: existingOrders } = await supabase
@@ -244,7 +240,6 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       )
     }
-    console.log('[n8n webhook] debug-4');
 
     const ownerOptimized = await uploadImage(ownerImage, 'optimized', serviceSupabase)
     const ownerOriginal = await uploadImage(ownerImage, 'original', serviceSupabase)
@@ -298,7 +293,6 @@ export async function POST(request: NextRequest) {
         .eq('stripe_payment_intent_id', paymentIntentId)
     }
 
-    console.log('[n8n webhook] debug-5');
 
     const n8nWebhookUrl = process.env.NEXT_N8N_WEBHOOK_URL
     if (n8nWebhookUrl) {
@@ -325,32 +319,35 @@ export async function POST(request: NextRequest) {
 
 
         const n8nData = await n8nResponse.json()
-        // const n8nData = [
-        //   {
-        //     "images": [
-        //       {
-        //         "url": "https://v3b.fal.media/files/b/0a869900/CCjsUIg0kOajt8ggZobmI_8619deff27ec4f85a5ac814573a3d3bf.jpg",
-        //         "width": 1024,
-        //         "height": 1024,
-        //         "content_type": "image/jpeg"
-        //       }
-        //     ],
-        //     "timings": {},
-        //     "seed": 3955154547,
-        //     "has_nsfw_concepts": [
-        //       false
-        //     ],
-        //     "prompt": "Create a humorous caricature of the pet from the second image, but with the owner's facial characteristics subtly applied to it. The pet should maintain its species and general appearance, but its facial features (eyes, nose, mouth, expression, face shape) should be modified to humorously resemble the owner from the first image. Use a playful cartoon style with bold outlines, vibrant colors, and exaggerated features to emphasize the comedic resemblance between pet and owner. Keep the pet's body and pose, but transform the face into a funny blend that makes it look like 'this pet definitely belongs to this person.' Use flat 2D colors, bold black outlines, and simplified shapes in the style of the old TV cartoon. Plain, simple background."
-        //   }
-        // ]
 
+        function inferContentType(url: string): string | null {
+          const u = url.toLowerCase();
+          if (u.endsWith('.jpg') || u.endsWith('.jpeg')) return 'image/jpeg';
+          if (u.endsWith('.png')) return 'image/png';
+          if (u.endsWith('.webp')) return 'image/webp';
+          return null;
+        }
 
+        function inferSizeFromResolution(resolution?: string) {
+          if (resolution?.toUpperCase() === '2K') return { width: 2048, height: 2048 };
+          if (resolution?.toUpperCase() === '1K') return { width: 1024, height: 1024 };
+          return { width: null, height: null };
+        }
 
-        console.log(`[n8n webhook] response - n8nData: ${JSON.stringify(n8nData, null, 2)}`);
-        console.log('[n8n webhook] queued', { order_id: order.id, callbackUrl })
 
         const firstResult: any = Array.isArray(n8nData) ? n8nData[0] : n8nData
-        const images: any[] = firstResult?.images || []
+        // const images: any[] = firstResult?.images || []
+        const resultImageUrl = firstResult?.data?.response?.resultImageUrl;
+        const paramJson = firstResult?.data?.paramJson ? JSON.parse(firstResult?.data?.paramJson) : {};
+        const widthHeight = inferSizeFromResolution(paramJson?.resolution);
+        const taskId = firstResult?.data?.taskId;
+        const prompt = paramJson?.prompt || '';
+        const image: any = {
+          url: resultImageUrl,
+          ...widthHeight,
+          content_type: inferContentType(resultImageUrl),
+        }
+        const images: any[] = image.url ? [image] : [];
 
         await serviceSupabase
           .from('petiboo_orders')
@@ -361,16 +358,15 @@ export async function POST(request: NextRequest) {
           {
             order_id: order.id,
             images,
-            seed: firstResult?.seed,
-            prompt: firstResult?.prompt,
-            has_nsfw_concepts: firstResult?.has_nsfw_concepts,
+            seed: -1,
+            prompt,
+            has_nsfw_concepts: false,
           },
           serviceSupabase,
           isGuest
         );
       }
     }
-    console.log('[n8n webhook] debug-6');
 
     return NextResponse.json({
       success: true,
@@ -412,12 +408,6 @@ async function uploadImage(file: File, folder: string, supabase: any): Promise<s
 
 async function uploadFalAiGeneratedImages(n8nResponse: any, supabase: any, isGuest: boolean) {
   try {
-    console.log('[n8n response] start upload - 0')
-
-    // Use service role for storage + DB writes to bypass RLS for webhooks
-    // const supabase = createServiceRoleClient()
-    // const body = await request.json()
-    console.log('[n8n response] start upload - 1', { n8nResponse })
 
     const normalized = Array.isArray(n8nResponse)
       ? n8nResponse[0]
@@ -434,11 +424,9 @@ async function uploadFalAiGeneratedImages(n8nResponse: any, supabase: any, isGue
       prompt,
       has_nsfw_concepts
     } = normalized;
-    console.log('[n8n response] start upload - 1.5', { order_id, imagesLength: images?.length });
     if (!order_id || !images || images.length === 0) {
       throw new Error('400 - Missing required data.order_id or images issue');
     }
-    console.log('[n8n response] start upload - 2')
 
 
     const { data: order } = await supabase
@@ -446,7 +434,6 @@ async function uploadFalAiGeneratedImages(n8nResponse: any, supabase: any, isGue
       .select('is_guest')
       .eq('id', order_id)
       .single()
-    console.log('[n8n response] start upload - 3')
 
     if (!order) {
       throw new Error(`404 - Order not found. order_id:${order_id}`);
@@ -454,14 +441,11 @@ async function uploadFalAiGeneratedImages(n8nResponse: any, supabase: any, isGue
 
     let imageData;
     const publicUrls = [];
-    console.log('[n8n response] start upload - 4', { imagesLength: images.length });
     for (let j = 0; j < images.length; j++) { // generates as much as generated images 
       imageData = images[j];
-      console.log('[n8n response] start upload', { order_id, fileUrl: imageData.url })
       const fileName = `generated/${order_id}/${Date.now()}.jpg`
       const publicUrl = await uploadRemoteImage(supabase, imageData.url, fileName, imageData.content_type || 'image/jpeg')
       publicUrls.push(publicUrl)
-      console.log('[n8n response] upload complete', { order_id, fileName, publicUrl })
 
       const { data: updatedRows, error: updateError } = await supabase
         .from('petiboo_generations')
@@ -509,7 +493,6 @@ async function uploadFalAiGeneratedImages(n8nResponse: any, supabase: any, isGue
         }
       }
     }
-    console.log('[n8n response] all images uploaded, updating order status', { order_id });
     const { error: orderUpdateError } = await supabase
       .from('petiboo_orders')
       .update({
@@ -536,7 +519,6 @@ async function uploadFalAiGeneratedImages(n8nResponse: any, supabase: any, isGue
       const path = orderData.pet_image_original.split('/images/')[1]
       await supabase.storage.from('images').remove([path])
     }
-    console.log('[n8n response] all uploads complete', { order_id, publicUrls: JSON.stringify(publicUrls) })
   } catch (error: any) {
     console.error('N8N response error:', error)
     throw error;

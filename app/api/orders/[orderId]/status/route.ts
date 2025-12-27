@@ -31,8 +31,6 @@ export async function GET(
       .order('order_index', { referencedTable: 'petiboo_generations', ascending: true })
       .single()
 
-    console.log('Order status check:', { orderId, orderIndex, order, error })
-    console.log('order data:', JSON.stringify(order, null, 2))
     if (error || !order) {
       return NextResponse.json(
         { error: 'Order not found' },
@@ -44,7 +42,6 @@ export async function GET(
       order.petiboo_generations?.find((g: any) => g.order_index === orderIndex) ??
       order.petiboo_generations?.[0] ??
       null
-    console.log('Generation found:', generation)
     return NextResponse.json({
       order_id: order.id,
       status: order.status,
