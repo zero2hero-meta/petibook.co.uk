@@ -6,11 +6,17 @@ export default function Hero() {
 
 
   const slideImages: BeforeAfterPair[] = [
+  { id: 'ex8', beforeSrc: '/images/homepage-slide/a5-1.jpg', afterSrc: '/images/homepage-slide/a5-2.png' },
+  { id: 'ex8', beforeSrc: '/images/homepage-slide/a4-1.jpg', afterSrc: '/images/homepage-slide/a4-2.jpg' },
+  { id: 'ex8', beforeSrc: '/images/homepage-slide/a3-1.jpeg', afterSrc: '/images/homepage-slide/a3-2.png' },
+  { id: 'ex8', beforeSrc: '/images/homepage-slide/a1-1.png', afterSrc: '/images/homepage-slide/a1-2.png' },
+  { id: 'ex8', beforeSrc: '/images/homepage-slide/a6-1.png', afterSrc: '/images/homepage-slide/a6-2.png' },
+  { id: 'ex8', beforeSrc: '/images/homepage-slide/a2-1.png', afterSrc: '/images/homepage-slide/a2-2.png' },
   { id: 'ex8', beforeSrc: '/images/homepage-slide/d8-owner.jpg', afterSrc: '/images/homepage-slide/d8-ai.jpg' },
   { id: 'ex3', beforeSrc: '/images/homepage-slide/d3-owner.jpg', afterSrc: '/images/homepage-slide/d3-ai.jpg' },
   { id: 'ex4', beforeSrc: '/images/homepage-slide/d4-owner.jpg', afterSrc: '/images/homepage-slide/d4-ai.jpg' },
   { id: 'ex5', beforeSrc: '/images/homepage-slide/d5-owner.jpg', afterSrc: '/images/homepage-slide/d5-ai.jpg' },
-  { id: 'ex1', beforeSrc: '/images/homepage-slide/d1-owner.jpg', afterSrc: '/images/homepage-slide/d1-ai.jpg', beforeLabel: 'Photos', afterLabel: 'Caricature' },
+  // { id: 'ex1', beforeSrc: '/images/homepage-slide/d1-owner.jpg', afterSrc: '/images/homepage-slide/d1-ai.jpg', beforeLabel: 'Photos', afterLabel: 'Caricature' },
   { id: 'ex2', beforeSrc: '/images/homepage-slide/d2-owner.jpg', afterSrc: '/images/homepage-slide/d2-ai.jpg' },
   { id: 'ex6', beforeSrc: '/images/homepage-slide/d6-owner.jpg', afterSrc: '/images/homepage-slide/d6-ai.jpg' },
   { id: 'ex7', beforeSrc: '/images/homepage-slide/d7-owner.jpg', afterSrc: '/images/homepage-slide/d7-ai.jpg' },
