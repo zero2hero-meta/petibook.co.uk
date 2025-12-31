@@ -1,7 +1,7 @@
-import { createServerClient } from '@/lib/supabase/server'
+import { createServiceRoleClient } from '@/lib/supabase/service'
 
 export default async function LatestCaricatures() {
-  const supabase = await createServerClient()
+  const supabase = createServiceRoleClient()
   const { data: recentImages } = await supabase
     .from('petiboo_generations')
     .select('permanent_image_url')
