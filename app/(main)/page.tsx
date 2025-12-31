@@ -4,8 +4,9 @@ import HowItWorks from '@/components/HowItWorks'
 import Link from 'next/link'
 import { Star, Check, ArrowRight, Zap, Heart, Shield } from 'lucide-react';
 import { BeforeAfterSlider } from '@/components/BeforeAfterSlider';
+import LatestCaricatures from '@/components/LatestCaricatures'
 
-export default function HomePage() {
+export default async function HomePage() {
     const reviews = [
     {
       name: 'Sarah & Max',
@@ -40,8 +41,10 @@ export default function HomePage() {
   return (
     <>
       <Hero />
+      <LatestCaricatures />
       <FunShowcase />
       <HowItWorks />
+
 
 
       <section className="py-20 bg-gray-50">
